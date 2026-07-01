@@ -1,0 +1,2247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Court Booking</title>
+  <style>
+    /* ── Reset & base ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0f1117;
+      --surface:   #181b23;
+      --surface2:  #1e222e;
+      --border:    #2a2f3e;
+      --accent:    #6c63ff;
+      --accent2:   #a78bfa;
+      --green:     #22c55e;
+      --red:       #ef4444;
+      --text:      #e2e8f0;
+      --muted:     #64748b;
+      --slot-h:    44px;    /* height of one 30-min row */
+      --label-w:   72px;
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      padding: 0;
+    }
+
+    /* ── Top nav ── */
+    .site-nav {
+      flex-shrink: 0;
+      height: 52px;
+      background: #13161f;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      z-index: 20;
+    }
+
+    .site-nav .logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+    }
+
+    .site-nav .logo-box {
+      width: 34px;
+      height: 34px;
+      background: #c8d62b;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 3px 4px 2px;
+      gap: 0;
+      border-radius: 3px;
+    }
+
+    .site-nav .logo-box .l1,
+    .site-nav .logo-box .l2 {
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+      font-size: 9px;
+      font-weight: 900;
+      color: #0d0d0d;
+      line-height: 1;
+    }
+
+    .site-nav .logo-box .l3 {
+      font-size: 5px;
+      font-weight: 700;
+      letter-spacing: 1.2px;
+      color: #0d0d0d;
+      line-height: 1;
+      margin-top: 2px;
+      text-transform: uppercase;
+    }
+
+    .site-nav .nav-links {
+      display: flex;
+      gap: 4px;
+      list-style: none;
+    }
+
+    .site-nav .nav-links a {
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--muted);
+      padding: 6px 12px;
+      border-radius: 6px;
+      transition: color 0.15s, background 0.15s;
+    }
+
+    .site-nav .nav-links a:hover    { color: var(--text); background: var(--surface2); }
+    .site-nav .nav-links a.active   { color: var(--text); font-weight: 700; }
+    .site-nav .nav-links a.book-btn {
+      background: #c8d62b;
+      color: #0d0d0d;
+      font-weight: 700;
+    }
+    .site-nav .nav-links a.book-btn:hover { background: #b5c220; }
+
+    /* ── Page shell ── */
+    .page-top {
+      flex-shrink: 0;
+      padding: 16px 20px 0;
+    }
+
+    /* calendar + sidebar fill the remaining height */
+    .page-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      gap: 14px;
+      overflow-y: auto;
+      padding: 0 20px 20px;
+    }
+
+    /* ── Legend ── */
+    .legend {
+      display: flex;
+      gap: 20px;
+      max-width: 1200px;
+      width: 100%;
+      margin: 0 auto 12px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .legend-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+    }
+
+    /* ── Calendar grid ── */
+    .calendar-wrap {
+      max-width: 1200px;
+      width: 100%;
+      margin: 0 auto;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-height: 0;
+    }
+
+    /* sticky column header row */
+    .col-headers {
+      display: grid;
+      background: var(--surface2);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .col-header {
+      padding: 14px 0;
+      text-align: center;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+
+    .col-header-label { /* time axis header */
+      font-size: 11px;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+
+    /* scrollable body */
+    .calendar-body {
+      display: grid;
+      overflow-y: auto;
+      flex: 1;
+      min-height: 0;
+      position: relative;
+    }
+
+    /* each row = 30 min slot */
+    .time-row {
+      display: contents; /* let children participate in the outer grid */
+    }
+
+    .time-label {
+      grid-column: 1;
+      display: flex;
+      align-items: flex-start;
+      justify-content: flex-end;
+      padding: 0 10px 0 0;
+      padding-top: 4px;
+      font-size: 11px;
+      color: var(--muted);
+      user-select: none;
+      position: relative;
+      z-index: 2;
+    }
+
+    /* half-hour lines */
+    .time-label.half {
+      font-size: 0; /* hide :30 labels to avoid clutter */
+    }
+
+    .cell {
+      height: var(--slot-h);
+      border-top: 1px solid var(--border);
+      position: relative;
+      transition: background 0.08s;
+      cursor: crosshair;
+      user-select: none;
+    }
+
+    .cell.half-hour {
+      border-top: 1px dashed #232738;
+    }
+
+    .cell.unavailable {
+      background: repeating-linear-gradient(
+        135deg,
+        transparent,
+        transparent 6px,
+        rgba(255,255,255,0.015) 6px,
+        rgba(255,255,255,0.015) 12px
+      );
+      cursor: not-allowed;
+    }
+
+    .cell.available:hover {
+      background: rgba(108, 99, 255, 0.08);
+    }
+
+    /* Subtle per-tier tint */
+    .cell.tier-tinted {
+      background: color-mix(in srgb, var(--tier-color) 4%, transparent);
+    }
+    .cell.tier-tinted:hover {
+      background: color-mix(in srgb, var(--tier-color) 12%, rgba(108,99,255,0.05));
+    }
+
+    /* Kill ALL hover effects while a drag is in progress */
+    .calendar-body.is-dragging .cell:hover,
+    .calendar-body.is-dragging .cell.tier-tinted:hover {
+      background: color-mix(in srgb, var(--tier-color, transparent) 4%, transparent);
+    }
+
+    /* Touch hint — pulse on the long-press target cell */
+    @media (hover: none) and (pointer: coarse) {
+      .cell.available:active {
+        background: color-mix(in srgb, var(--tier-color, #6c63ff) 18%, transparent);
+        transition: background 0.3s;
+      }
+    }
+
+    .cell.selecting {
+      background: rgba(108, 99, 255, 0.22) !important;
+    }
+
+    /* booked blocks rendered as absolute overlays */
+    .booking-block {
+      position: absolute;
+      left: 4px;
+      right: 4px;
+      border-radius: 6px;
+      padding: 4px 8px;
+      font-size: 11px;
+      font-weight: 600;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      overflow: hidden;
+      z-index: 3;
+    }
+
+    .booking-block.other {
+      background: rgba(239,68,68,0.18);
+      border: 1px solid rgba(239,68,68,0.4);
+      color: #fca5a5;
+    }
+
+    .booking-block.mine {
+      background: rgba(34,197,94,0.18);
+      border: 1px solid rgba(34,197,94,0.4);
+      color: #86efac;
+    }
+
+    .booking-block .bk-name { font-weight: 700; }
+    .booking-block .bk-time { font-size: 10px; opacity: 0.8; margin-top: 1px; }
+
+    /* drag ghost */
+    .drag-preview {
+      position: absolute;
+      left: 4px;
+      right: 4px;
+      background: rgba(108, 99, 255, 0.35);
+      border: 2px solid var(--accent);
+      border-radius: 6px;
+      z-index: 5;
+      pointer-events: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--accent2);
+      gap: 4px;
+    }
+
+    /* ── Modal ── */
+    .modal-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.65);
+      backdrop-filter: blur(4px);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-backdrop.open { display: flex; }
+
+    .modal {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px;
+      width: 420px;
+      max-width: calc(100vw - 32px);
+      box-shadow: 0 24px 60px rgba(0,0,0,0.6);
+      animation: pop 0.18s ease;
+    }
+
+    @keyframes pop {
+      from { transform: scale(0.92); opacity: 0; }
+      to   { transform: scale(1);    opacity: 1; }
+    }
+
+    .modal h2 { font-size: 18px; margin-bottom: 6px; }
+
+    .modal .subtitle {
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 22px;
+    }
+
+    .modal-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+      font-size: 14px;
+    }
+
+    .modal-row .icon { font-size: 16px; }
+
+    .modal-row strong { color: var(--accent2); }
+
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 24px;
+    }
+
+    .btn {
+      flex: 1;
+      padding: 11px;
+      border-radius: 8px;
+      border: none;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: filter 0.15s, transform 0.1s;
+    }
+
+    .btn:active { transform: scale(0.97); }
+    .btn:hover  { filter: brightness(1.12); }
+
+    .btn-confirm { background: var(--accent); color: #fff; }
+    .btn-cancel  { background: var(--surface); color: var(--muted); border: 1px solid var(--border); }
+
+    /* ── My bookings sidebar panel ── */
+    .sidebar {
+      max-width: 1200px;
+      width: 100%;
+      margin: 0 auto;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 16px 24px;
+      flex-shrink: 0;
+    }
+
+    .sidebar h3 {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 14px;
+    }
+
+    .my-bookings-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .my-booking-chip {
+      background: var(--surface2);
+      border: 1px solid rgba(34,197,94,0.35);
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .my-booking-chip .chip-court { font-weight: 700; color: var(--green); }
+    .my-booking-chip .chip-date  { color: var(--accent2); font-size: 12px; }
+    .my-booking-chip .chip-time  { color: var(--muted); }
+
+    .empty-state {
+      font-size: 13px;
+      color: var(--muted);
+      font-style: italic;
+    }
+
+    /* ── Date strip ── */
+    .date-strip-wrap {
+      max-width: 1200px;
+      width: 100%;
+      margin: 0 auto 12px;
+      overflow-x: auto;
+      scrollbar-width: none;
+      flex-shrink: 0;
+    }
+    .date-strip-wrap::-webkit-scrollbar { display: none; }
+
+    .date-strip {
+      display: flex;
+      gap: 8px;
+      padding: 2px 2px 6px;
+      min-width: max-content;
+    }
+
+    .date-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 14px;
+      cursor: pointer;
+      color: var(--muted);
+      transition: background 0.15s, border-color 0.15s, color 0.15s;
+      min-width: 58px;
+    }
+
+    .date-btn:hover {
+      background: var(--surface2);
+      border-color: var(--accent);
+      color: var(--text);
+    }
+
+    .date-btn.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    .date-btn .day-name  { font-size: 10px; text-transform: uppercase; letter-spacing: 0.6px; }
+    .date-btn .day-num   { font-size: 20px; font-weight: 700; line-height: 1; }
+    .date-btn .day-month { font-size: 10px; opacity: 0.75; }
+
+    /* ── Player section in modal ── */
+    .player-section {
+      margin-top: 20px;
+      padding-top: 18px;
+      border-top: 1px solid var(--border);
+    }
+
+    .player-section-label {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.7px;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+
+    .player-input-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .player-input {
+      flex: 1;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 9px 12px;
+      font-size: 13px;
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .player-input:focus { border-color: var(--accent); }
+    .player-input::placeholder { color: var(--muted); }
+
+    .player-add-btn {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 9px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: filter 0.15s;
+    }
+    .player-add-btn:hover { filter: brightness(1.15); }
+
+    /* Dropdown suggestions */
+    .player-suggestions {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      margin-bottom: 8px;
+      display: none;
+    }
+    .player-suggestions.visible { display: block; }
+
+    .suggestion-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 12px;
+      cursor: pointer;
+      transition: background 0.1s;
+      font-size: 13px;
+    }
+    .suggestion-item:hover { background: var(--surface2); }
+
+    .suggestion-avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .suggestion-name { flex: 1; font-weight: 600; }
+    .suggestion-handle { font-size: 11px; color: var(--muted); }
+
+    .suggestion-badge {
+      font-size: 10px;
+      padding: 2px 7px;
+      border-radius: 20px;
+      font-weight: 700;
+    }
+    .badge-member {
+      background: rgba(108,99,255,0.2);
+      color: var(--accent2);
+      border: 1px solid rgba(108,99,255,0.3);
+    }
+    .badge-guest {
+      background: rgba(100,116,139,0.2);
+      color: var(--muted);
+      border: 1px solid var(--border);
+    }
+
+    /* Added players list */
+    .players-added {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    .player-tag {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--surface);
+      border-radius: 8px;
+      padding: 7px 10px;
+      font-size: 13px;
+      border: 1px solid var(--border);
+      animation: fadein 0.15s ease;
+    }
+
+    @keyframes fadein {
+      from { opacity: 0; transform: translateY(-4px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .player-tag .pt-avatar {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .player-tag .pt-name { flex: 1; font-weight: 600; }
+    .player-tag .pt-type {
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 20px;
+      font-weight: 700;
+    }
+    .pt-type.member {
+      background: rgba(108,99,255,0.2);
+      color: var(--accent2);
+    }
+    .pt-type.guest {
+      background: rgba(100,116,139,0.15);
+      color: var(--muted);
+    }
+
+    .player-tag .pt-remove {
+      background: none;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 15px;
+      line-height: 1;
+      padding: 0 2px;
+      transition: color 0.15s;
+    }
+    .player-tag .pt-remove:hover { color: var(--red); }
+
+    /* Players shown on booking chips in the sidebar */
+    .chip-players {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+      margin-top: 6px;
+    }
+
+    .chip-player-avatar {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      font-size: 10px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      title: attr(title);
+    }
+
+    /* ── Step indicator ── */
+    .step-indicator {
+      display: flex;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+
+    .step-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      color: var(--muted);
+      transition: color 0.2s;
+    }
+
+    .step-item.active  { color: var(--accent2); }
+    .step-item.done    { color: var(--green); }
+
+    .step-dot {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      border: 2px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--muted);
+      background: var(--surface);
+      transition: all 0.2s;
+    }
+
+    .step-item.active .step-dot {
+      border-color: var(--accent);
+      color: var(--accent2);
+      background: rgba(108,99,255,0.12);
+    }
+
+    .step-item.done .step-dot {
+      border-color: var(--green);
+      background: rgba(34,197,94,0.12);
+      color: var(--green);
+    }
+
+    .step-line {
+      flex: 1;
+      height: 2px;
+      background: var(--border);
+      margin: 0 8px;
+      margin-bottom: 16px;
+      border-radius: 2px;
+      transition: background 0.3s;
+    }
+
+    .step-line.done { background: var(--green); }
+
+    /* ── Modal step panels ── */
+    .modal-step { animation: fadein 0.18s ease; }
+    .modal-step.hidden { display: none; }
+
+    /* ── Summary card (step 1) ── */
+    .summary-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 16px;
+      margin-bottom: 16px;
+    }
+
+    .summary-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 5px 0;
+      font-size: 13px;
+    }
+
+    .summary-label { color: var(--muted); }
+    .summary-value { font-weight: 600; color: var(--text); text-align: right; }
+    .summary-total { font-size: 18px; font-weight: 800; color: var(--accent2); }
+
+    .summary-divider {
+      height: 1px;
+      background: var(--border);
+      margin: 8px 0;
+    }
+
+    .optional-tag {
+      font-size: 10px;
+      color: var(--muted);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 1px 5px;
+      vertical-align: middle;
+      margin-left: 4px;
+      text-transform: none;
+      letter-spacing: 0;
+      font-weight: 400;
+    }
+
+    /* ── Saved cards (step 2) ── */
+    .pay-section-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.7px;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .saved-cards {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .card-option input[type="radio"] { display: none; }
+
+    .card-option-body {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: var(--surface);
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      padding: 11px 14px;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+    }
+
+    .card-option input:checked + .card-option-body {
+      border-color: var(--accent);
+      background: rgba(108,99,255,0.07);
+    }
+
+    .card-option-body:hover { border-color: var(--accent2); }
+
+    .card-chip {
+      width: 36px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .new-card-icon {
+      font-size: 18px;
+      color: var(--muted);
+      width: 36px;
+      height: 28px;
+    }
+
+    .card-info { flex: 1; }
+    .card-name { font-size: 13px; font-weight: 600; display: block; }
+    .card-exp  { font-size: 11px; color: var(--muted); display: block; margin-top: 1px; }
+
+    .card-radio-mark {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      border: 2px solid var(--border);
+      flex-shrink: 0;
+      transition: all 0.15s;
+      position: relative;
+    }
+
+    .card-option input:checked + .card-option-body .card-radio-mark {
+      border-color: var(--accent);
+      background: var(--accent);
+    }
+
+    .card-option input:checked + .card-option-body .card-radio-mark::after {
+      content: '';
+      position: absolute;
+      inset: 3px;
+      border-radius: 50%;
+      background: white;
+    }
+
+    /* ── New card form ── */
+    .new-card-form {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      animation: fadein 0.15s ease;
+    }
+
+    .new-card-form.hidden { display: none; }
+
+    .field-group { display: flex; flex-direction: column; gap: 5px; flex: 1; }
+
+    .field-row { display: flex; gap: 10px; }
+
+    .field-label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: var(--muted);
+    }
+
+    .pay-input {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 14px;
+      color: var(--text);
+      outline: none;
+      font-family: 'SF Mono', 'Fira Mono', monospace;
+      transition: border-color 0.15s;
+      width: 100%;
+    }
+
+    .pay-input:focus { border-color: var(--accent); }
+    .pay-input::placeholder { color: var(--muted); font-family: inherit; }
+    .pay-input.error { border-color: var(--red); }
+
+    .save-card-toggle {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--muted);
+      cursor: pointer;
+    }
+
+    .save-card-toggle input { accent-color: var(--accent); cursor: pointer; }
+
+    /* ── Order summary pill ── */
+    .order-summary-pill {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(108,99,255,0.1);
+      border: 1px solid rgba(108,99,255,0.25);
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: 13px;
+    }
+
+    .pill-total {
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--accent2);
+    }
+
+    /* ── Secure note ── */
+    .pay-secure-note {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 12px;
+    }
+
+    /* ── Success screen ── */
+    .success-screen {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      padding: 8px 0 4px;
+    }
+
+    .success-icon {
+      width: 72px;
+      height: 72px;
+      margin-bottom: 20px;
+    }
+
+    /* SVG animations */
+    .success-circle {
+      stroke-dasharray: 160;
+      stroke-dashoffset: 160;
+      animation: draw-circle 0.5s ease forwards;
+    }
+
+    .success-check {
+      stroke-dasharray: 40;
+      stroke-dashoffset: 40;
+      animation: draw-check 0.35s ease 0.45s forwards;
+    }
+
+    @keyframes draw-circle {
+      to { stroke-dashoffset: 0; }
+    }
+
+    @keyframes draw-check {
+      to { stroke-dashoffset: 0; }
+    }
+
+    @keyframes shake {
+      0%,100% { transform: translateX(0); }
+      20%      { transform: translateX(-6px); }
+      40%      { transform: translateX(6px); }
+      60%      { transform: translateX(-4px); }
+      80%      { transform: translateX(4px); }
+    }
+
+    .success-title {
+      font-size: 22px;
+      font-weight: 800;
+      margin-bottom: 6px;
+    }
+
+    .success-sub {
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 20px;
+      line-height: 1.5;
+    }
+
+    .success-details {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 18px;
+      width: 100%;
+      text-align: left;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-size: 13px;
+    }
+
+    .success-detail-row {
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .success-detail-row span:first-child { color: var(--muted); }
+    .success-detail-row span:last-child  { font-weight: 600; }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: var(--green);
+      color: #fff;
+      padding: 12px 24px;
+      border-radius: 40px;
+      font-size: 14px;
+      font-weight: 600;
+      box-shadow: 0 8px 30px rgba(34,197,94,0.4);
+      transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+      z-index: 200;
+      pointer-events: none;
+    }
+
+    .toast.show { transform: translateX(-50%) translateY(0); }
+  </style>
+</head>
+<body>
+
+<nav class="site-nav">
+  <a class="logo" href="index.html">
+    <div class="logo-box">
+      <span class="l1">PING.</span>
+      <span class="l2">PONG</span>
+      <span class="l3">GARDEN</span>
+    </div>
+  </a>
+  <ul class="nav-links">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="court-booking.html" class="book-btn active">Bookings</a></li>
+  </ul>
+</nav>
+
+<div class="page-top">
+  <!-- Date strip -->
+  <div class="date-strip-wrap">
+    <div class="date-strip" id="dateStrip"></div>
+  </div>
+
+  <div class="legend">
+    <div class="legend-item">
+      <div class="legend-dot" style="background:rgba(108,99,255,0.35);border:1px solid #6c63ff"></div>
+      Available (drag to select)
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background:rgba(34,197,94,0.25);border:1px solid #22c55e"></div>
+      Your booking
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background:rgba(239,68,68,0.2);border:1px solid #ef4444"></div>
+      Booked
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background:repeating-linear-gradient(135deg,transparent,transparent 4px,rgba(255,255,255,0.06) 4px,rgba(255,255,255,0.06) 8px);border:1px solid #2a2f3e"></div>
+      Unavailable
+    </div>
+    <div style="width:1px;background:var(--border);margin:0 4px;"></div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background:#22c55e22;border:1px solid #22c55e66"></div>
+      Off-peak €10/h
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background:#f59e0b22;border:1px solid #f59e0b66"></div>
+      Standard €15/h
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background:#ef444422;border:1px solid #ef444466"></div>
+      Peak €20/h
+    </div>
+    <div style="margin-left:auto;font-size:11px;color:var(--muted);background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:3px 10px;white-space:nowrap;">
+      Max 2h per booking
+    </div>
+  </div>
+</div>
+
+<div class="page-body">
+  <div class="calendar-wrap" id="calendarWrap">
+    <div class="col-headers" id="colHeaders"></div>
+    <div class="calendar-body" id="calendarBody"></div>
+  </div>
+
+  <div class="sidebar">
+    <h3>My Bookings</h3>
+    <div class="my-bookings-list" id="myBookingsList">
+      <span class="empty-state">No bookings yet — drag a time slot to get started.</span>
+    </div>
+  </div>
+</div>
+
+<!-- Booking modal (3 steps) -->
+<div class="modal-backdrop" id="modalBackdrop">
+  <div class="modal">
+
+    <!-- ── Step indicator ── -->
+    <div class="step-indicator" id="stepIndicator">
+      <div class="step-item active" data-step="1">
+        <div class="step-dot">1</div>
+        <span>Review</span>
+      </div>
+      <div class="step-line"></div>
+      <div class="step-item" data-step="2">
+        <div class="step-dot">2</div>
+        <span>Payment</span>
+      </div>
+      <div class="step-line"></div>
+      <div class="step-item" data-step="3">
+        <div class="step-dot">3</div>
+        <span>Confirm</span>
+      </div>
+    </div>
+
+    <!-- ══ STEP 1 — Review ══ -->
+    <div class="modal-step" id="step1">
+      <h2>Review booking</h2>
+      <p class="subtitle">Check the details, then add your players.</p>
+
+      <div class="summary-card">
+        <div class="summary-row">
+          <span class="summary-label">Court</span>
+          <span id="mCourt" class="summary-value"></span>
+        </div>
+        <div class="summary-row">
+          <span class="summary-label">Date</span>
+          <span id="mDate" class="summary-value"></span>
+        </div>
+        <div class="summary-row">
+          <span class="summary-label">Time</span>
+          <span id="mTime" class="summary-value"></span>
+        </div>
+        <div class="summary-row">
+          <span class="summary-label">Duration</span>
+          <span id="mDuration" class="summary-value"></span>
+        </div>
+        <div class="summary-divider"></div>
+        <div class="summary-row">
+          <span class="summary-label">Total</span>
+          <span id="mPrice" class="summary-value summary-total"></span>
+        </div>
+        <div id="mPriceBreakdown"></div>
+      </div>
+
+      <!-- Players section -->
+      <div class="player-section">
+        <div class="player-section-label">Add players <span class="optional-tag">optional</span></div>
+        <div class="player-input-row">
+          <input class="player-input" id="playerInput" type="text" placeholder="Search by name…" autocomplete="off" />
+          <button class="player-add-btn" id="playerAddBtn">Add</button>
+        </div>
+        <div class="player-suggestions" id="playerSuggestions"></div>
+        <div class="players-added" id="playersAdded"></div>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn btn-cancel" id="step1Cancel">Cancel</button>
+        <button class="btn btn-confirm" id="step1Next">Continue to payment</button>
+      </div>
+    </div>
+
+    <!-- ══ STEP 2 — Payment ══ -->
+    <div class="modal-step hidden" id="step2">
+      <h2>Payment</h2>
+      <p class="subtitle">Choose how you'd like to pay.</p>
+
+      <!-- Saved cards -->
+      <div class="pay-section-label">Saved cards</div>
+      <div class="saved-cards" id="savedCards">
+        <label class="card-option">
+          <input type="radio" name="payMethod" value="visa4242" checked />
+          <div class="card-option-body">
+            <div class="card-chip">
+              <svg width="22" height="16" viewBox="0 0 22 16"><rect width="22" height="16" rx="3" fill="#f59e0b"/><rect x="2" y="5" width="18" height="6" rx="1.5" fill="#0f1117" opacity=".3"/></svg>
+            </div>
+            <div class="card-info">
+              <span class="card-name">Visa •••• 4242</span>
+              <span class="card-exp">Exp 09/27</span>
+            </div>
+            <div class="card-radio-mark"></div>
+          </div>
+        </label>
+        <label class="card-option">
+          <input type="radio" name="payMethod" value="mc9999" />
+          <div class="card-option-body">
+            <div class="card-chip">
+              <svg width="22" height="16" viewBox="0 0 22 16"><rect width="22" height="16" rx="3" fill="#ef4444"/><circle cx="8" cy="8" r="6" fill="#ef4444" stroke="#0f1117" stroke-width="1.5"/><circle cx="14" cy="8" r="6" fill="#f97316" opacity=".85"/></svg>
+            </div>
+            <div class="card-info">
+              <span class="card-name">Mastercard •••• 9999</span>
+              <span class="card-exp">Exp 03/26</span>
+            </div>
+            <div class="card-radio-mark"></div>
+          </div>
+        </label>
+        <label class="card-option">
+          <input type="radio" name="payMethod" value="new" />
+          <div class="card-option-body">
+            <div class="card-chip new-card-icon">＋</div>
+            <div class="card-info">
+              <span class="card-name">New card</span>
+            </div>
+            <div class="card-radio-mark"></div>
+          </div>
+        </label>
+      </div>
+
+      <!-- New card form (shown when "New card" selected) -->
+      <div class="new-card-form hidden" id="newCardForm">
+        <div class="field-group">
+          <label class="field-label">Card number</label>
+          <input class="pay-input" id="cardNumber" type="text" placeholder="1234 5678 9012 3456" maxlength="19" inputmode="numeric" />
+        </div>
+        <div class="field-row">
+          <div class="field-group">
+            <label class="field-label">Expiry</label>
+            <input class="pay-input" id="cardExpiry" type="text" placeholder="MM / YY" maxlength="7" inputmode="numeric" />
+          </div>
+          <div class="field-group">
+            <label class="field-label">CVC</label>
+            <input class="pay-input" id="cardCvc" type="text" placeholder="123" maxlength="4" inputmode="numeric" />
+          </div>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Name on card</label>
+          <input class="pay-input" id="cardName" type="text" placeholder="Full name" />
+        </div>
+        <label class="save-card-toggle">
+          <input type="checkbox" id="saveCard" checked />
+          <span>Save card for future bookings</span>
+        </label>
+      </div>
+
+      <!-- Order summary pill -->
+      <div class="order-summary-pill" id="orderSummaryPill">
+        <span id="pillLabel">Loading…</span>
+        <span class="pill-total" id="pillTotal"></span>
+      </div>
+
+      <div class="modal-actions" style="margin-top:16px;">
+        <button class="btn btn-cancel" id="step2Back">← Back</button>
+        <button class="btn btn-confirm" id="step2Pay">Pay <span id="step2PayAmount"></span></button>
+      </div>
+
+      <div class="pay-secure-note">
+        <svg width="12" height="14" viewBox="0 0 12 14" fill="none"><path d="M6 1L1 3v4c0 3 2.5 5.2 5 6 2.5-.8 5-3 5-6V3L6 1z" stroke="#64748b" stroke-width="1.2" fill="none"/></svg>
+        Payments are encrypted and secure
+      </div>
+    </div>
+
+    <!-- ══ STEP 3 — Success ══ -->
+    <div class="modal-step hidden" id="step3">
+      <div class="success-screen">
+        <div class="success-icon" id="successIcon">
+          <svg viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle class="success-circle" cx="26" cy="26" r="24" stroke="#22c55e" stroke-width="3"/>
+            <path class="success-check" d="M14 26L22 34L38 18" stroke="#22c55e" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <h2 class="success-title">You're booked!</h2>
+        <p class="success-sub" id="successSub"></p>
+        <div class="success-details" id="successDetails"></div>
+        <button class="btn btn-confirm" id="step3Done" style="margin-top:24px;width:100%;">Done</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Toast notification -->
+<div class="toast" id="toast"></div>
+
+<script>
+  // ─── Config ────────────────────────────────────────────────────────────────
+  const COURTS = [
+    { id: 1, name: 'Court A', icon: '🎾' },
+    { id: 2, name: 'Court B', icon: '🏸' },
+    { id: 3, name: 'Court C', icon: '⚽' },
+  ];
+
+  // ─── Mock accounts DB ──────────────────────────────────────────────────────
+  // Each user has a name, handle, avatar colour, and initials
+  const ACCOUNTS = [
+    { id: 'u1',  name: 'Fabian Torres',   handle: '@fabian',   color: '#6c63ff', initials: 'FT' },
+    { id: 'u2',  name: 'Jane Okafor',     handle: '@jane_o',   color: '#22c55e', initials: 'JO' },
+    { id: 'u3',  name: 'Eli Nachman',     handle: '@eli_n',    color: '#f59e0b', initials: 'EN' },
+    { id: 'u4',  name: 'Sara Lindqvist',  handle: '@saral',    color: '#ec4899', initials: 'SL' },
+    { id: 'u5',  name: 'Marcus Chen',     handle: '@m_chen',   color: '#14b8a6', initials: 'MC' },
+    { id: 'u6',  name: 'Priya Sharma',    handle: '@priyash',  color: '#f97316', initials: 'PS' },
+    { id: 'u7',  name: 'Noah Williams',   handle: '@noahw',    color: '#a78bfa', initials: 'NW' },
+    { id: 'u8',  name: 'Aisha Diallo',    handle: '@aishad',   color: '#ef4444', initials: 'AD' },
+  ];
+
+  // Search accounts by name prefix (case-insensitive)
+  function searchAccounts(query) {
+    const q = query.trim().toLowerCase();
+    if (!q) return [];
+    return ACCOUNTS.filter(u =>
+      u.name.toLowerCase().includes(q) || u.handle.toLowerCase().includes(q)
+    ).slice(0, 5);
+  }
+
+  const TOTAL_HOURS   = 24;
+  const SLOTS_PER_H   = 2;        // 30-min slots
+  const TOTAL_SLOTS   = TOTAL_HOURS * SLOTS_PER_H; // 48
+  const OPEN_SLOT     = 7  * SLOTS_PER_H;          // 7:00  → index 14
+  const CLOSE_SLOT    = 23 * SLOTS_PER_H;          // 23:00 → index 46
+  const MAX_SLOTS     = 4;                          // 2 hours max (4 × 30 min)
+  const MAX_DAYS_AHEAD = 14;
+
+  // ─── Pricing tiers ─────────────────────────────────────────────────────────
+  // Each tier: open slot (inclusive) → close slot (exclusive), rate in EUR/h
+  const PRICE_TIERS = [
+    { startH: 7,  endH: 10, rate: 10, label: 'Off-peak',   color: '#22c55e' },  // green
+    { startH: 10, endH: 17, rate: 15, label: 'Standard',   color: '#f59e0b' },  // amber
+    { startH: 17, endH: 23, rate: 20, label: 'Peak',       color: '#ef4444' },  // red
+  ];
+
+  // Return the tier for a given slot index (or null if outside open hours)
+  function tierForSlot(slot) {
+    const hour = (slot * 30) / 60;
+    return PRICE_TIERS.find(t => hour >= t.startH && hour < t.endH) || null;
+  }
+
+  // Calculate total cost + a breakdown string for a range [lo, hi) (slot indices)
+  function calcCost(lo, hi) {
+    // Accumulate cost per tier
+    const segments = [];
+    let total = 0;
+    for (const tier of PRICE_TIERS) {
+      const tStart = tier.startH * SLOTS_PER_H;
+      const tEnd   = tier.endH   * SLOTS_PER_H;
+      const overlap = Math.max(0, Math.min(hi, tEnd) - Math.max(lo, tStart));
+      if (overlap > 0) {
+        const hrs  = overlap * 0.5;          // each slot = 30 min = 0.5 h
+        const cost = hrs * tier.rate;
+        total += cost;
+        segments.push({ tier, hrs, cost });
+      }
+    }
+    return { total, segments };
+  }
+
+  function formatEur(n) {
+    return '€' + (Number.isInteger(n) ? n : n.toFixed(2));
+  }
+
+  // dateKey(date) → "YYYY-MM-DD"
+  function dateKey(d) {
+    return d.toISOString().slice(0, 10);
+  }
+
+  // Build the 15 selectable dates (today … today+14)
+  const TODAY = new Date();
+  TODAY.setHours(0, 0, 0, 0);
+  const DATES = Array.from({ length: MAX_DAYS_AHEAD + 1 }, (_, i) => {
+    const d = new Date(TODAY);
+    d.setDate(TODAY.getDate() + i);
+    return d;
+  });
+
+  let selectedDate = DATES[0];
+
+  // Pre-seeded bookings keyed by dateKey → { courtId: [ {start,end,type,label} ] }
+  // Seed today and tomorrow with some demo data
+  const seedBookings = () => ({
+    1: [ { start: 18, end: 20, type: 'other', label: 'Reserved' },
+         { start: 28, end: 32, type: 'other', label: 'Reserved' } ],
+    2: [ { start: 22, end: 26, type: 'other', label: 'Reserved' } ],
+    3: [],
+  });
+
+  // allBookings[dateKey] = { courtId: [...] }
+  const allBookings = {
+    [dateKey(DATES[0])]: seedBookings(),
+    [dateKey(DATES[1])]: {
+      1: [ { start: 24, end: 26, type: 'other', label: 'Reserved' } ],
+      2: [],
+      3: [ { start: 30, end: 34, type: 'other', label: 'Reserved' } ],
+    },
+  };
+
+  function getBookings(date) {
+    const k = dateKey(date);
+    if (!allBookings[k]) allBookings[k] = { 1: [], 2: [], 3: [] };
+    return allBookings[k];
+  }
+
+  // userBookings[dateKey] = [ {courtId, start, end, id} ]
+  const allUserBookings = {};
+
+  function getUserBookings(date) {
+    const k = dateKey(date);
+    if (!allUserBookings[k]) allUserBookings[k] = [];
+    return allUserBookings[k];
+  }
+
+  // ─── Helpers ───────────────────────────────────────────────────────────────
+  function slotToTime(slot) {
+    const totalMin = slot * 30;
+    const h = Math.floor(totalMin / 60);
+    const m = totalMin % 60;
+    return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+  }
+
+  function slotToLabel(slot) {
+    const totalMin = slot * 30;
+    const h = Math.floor(totalMin / 60);
+    const m = totalMin % 60;
+    const ampm = h < 12 ? 'AM' : 'PM';
+    const h12  = h === 0 ? 12 : h > 12 ? h - 12 : h;
+    return `${h12}:${String(m).padStart(2,'0')} ${ampm}`;
+  }
+
+  function slotIsOpen(slot) {
+    return slot >= OPEN_SLOT && slot < CLOSE_SLOT;
+  }
+
+  // Check if a range [start, end) overlaps any existing booking for a court on the selected date
+  function hasConflict(courtId, start, end) {
+    const bks = getBookings(selectedDate)[courtId] || [];
+    const userBks = getUserBookings(selectedDate).filter(b => b.courtId === courtId);
+    return [...bks, ...userBks].some(b => start < b.end && end > b.start);
+  }
+
+  // Return all booked intervals for a court on the selected date, sorted by start
+  function allIntervals(courtId) {
+    const bks     = getBookings(selectedDate)[courtId] || [];
+    const userBks = getUserBookings(selectedDate).filter(b => b.courtId === courtId);
+    return [...bks, ...userBks].slice().sort((a, b) => a.start - b.start);
+  }
+
+  // Check whether placing [lo, hi) would leave a 30-min (1-slot) orphan gap
+  // on either side — i.e. a free slot that is fully enclosed between two booked
+  // blocks (or between a booked block and the open/close boundary).
+  function wouldLeaveGap(courtId, lo, hi) {
+    const intervals = allIntervals(courtId);
+
+    // Helper: is slot `s` free after we imagine [lo,hi) is booked?
+    const isFree = s =>
+      s >= OPEN_SLOT && s < CLOSE_SLOT &&
+      !intervals.some(b => s >= b.start && s < b.end) &&
+      !(s >= lo && s < hi);
+
+    // Helper: is slot `s` "blocked" — either booked or outside open hours?
+    const isBlocked = s =>
+      s < OPEN_SLOT || s >= CLOSE_SLOT ||
+      intervals.some(b => s >= b.start && s < b.end) ||
+      (s >= lo && s < hi);
+
+    // Check every free slot adjacent to the proposed booking on both sides.
+    // A gap of exactly 1 free slot is orphaned if both its neighbours are blocked.
+    const checkSlot = s => isFree(s) && isBlocked(s - 1) && isBlocked(s + 1);
+
+    // Look one slot before lo and one slot after hi
+    if (checkSlot(lo - 1)) return true;
+    if (checkSlot(hi))     return true;
+
+    return false;
+  }
+
+  function formatDuration(slots) {
+    const mins = slots * 30;
+    if (mins < 60) return `${mins} min`;
+    const h = Math.floor(mins / 60), m = mins % 60;
+    return m === 0 ? `${h}h` : `${h}h ${m}min`;
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2400);
+  }
+
+  // ─── Player search logic ────────────────────────────────────────────────────
+  let pendingPlayers = [];   // { id|null, name, handle|null, color, initials, type:'member'|'guest' }
+
+  function playerInitials(name) {
+    return name.trim().split(/\s+/).map(w => w[0].toUpperCase()).slice(0, 2).join('');
+  }
+
+  // Random-ish colour from name string
+  const GUEST_COLORS = ['#64748b','#78716c','#6b7280','#71717a'];
+  function guestColor(name) {
+    let h = 0;
+    for (let i = 0; i < name.length; i++) h = name.charCodeAt(i) + ((h << 5) - h);
+    return GUEST_COLORS[Math.abs(h) % GUEST_COLORS.length];
+  }
+
+  function resetPlayerUI() {
+    pendingPlayers = [];
+    document.getElementById('playerInput').value = '';
+    document.getElementById('playerSuggestions').innerHTML = '';
+    document.getElementById('playerSuggestions').classList.remove('visible');
+    document.getElementById('playersAdded').innerHTML = '';
+  }
+
+  function renderSuggestions(query) {
+    const box = document.getElementById('playerSuggestions');
+    if (!query.trim()) { box.classList.remove('visible'); box.innerHTML = ''; return; }
+
+    const matches = searchAccounts(query);
+    // Also offer "Add as guest" option
+    const alreadyAdded = pendingPlayers.map(p => p.id).filter(Boolean);
+    const filtered = matches.filter(u => !alreadyAdded.includes(u.id));
+
+    let html = filtered.map(u => `
+      <div class="suggestion-item" data-id="${u.id}">
+        <div class="suggestion-avatar" style="background:${u.color}20;color:${u.color}">${u.initials}</div>
+        <div>
+          <div class="suggestion-name">${u.name}</div>
+          <div class="suggestion-handle">${u.handle}</div>
+        </div>
+        <span class="suggestion-badge badge-member">Member</span>
+      </div>`).join('');
+
+    // Always show "add as guest" for the raw query if not already a guest with same name
+    const nameLower = query.trim().toLowerCase();
+    const alreadyGuest = pendingPlayers.some(p => p.type === 'guest' && p.name.toLowerCase() === nameLower);
+    if (!alreadyGuest) {
+      html += `
+        <div class="suggestion-item" data-guest="${query.trim()}">
+          <div class="suggestion-avatar" style="background:#64748b20;color:#94a3b8">${playerInitials(query)}</div>
+          <div>
+            <div class="suggestion-name">${query.trim()}</div>
+            <div class="suggestion-handle">Not a member</div>
+          </div>
+          <span class="suggestion-badge badge-guest">Guest</span>
+        </div>`;
+    }
+
+    box.innerHTML = html;
+    box.classList.toggle('visible', html.length > 0);
+  }
+
+  function addPlayer(player) {
+    pendingPlayers.push(player);
+    renderPlayersAdded();
+    document.getElementById('playerInput').value = '';
+    document.getElementById('playerSuggestions').classList.remove('visible');
+    document.getElementById('playerSuggestions').innerHTML = '';
+  }
+
+  function removePlayer(idx) {
+    pendingPlayers.splice(idx, 1);
+    renderPlayersAdded();
+  }
+
+  function renderPlayersAdded() {
+    const container = document.getElementById('playersAdded');
+    if (pendingPlayers.length === 0) { container.innerHTML = ''; return; }
+    container.innerHTML = pendingPlayers.map((p, i) => `
+      <div class="player-tag">
+        <div class="pt-avatar" style="background:${p.color}20;color:${p.color}">${p.initials}</div>
+        <span class="pt-name">${p.name}</span>
+        ${p.handle ? `<span style="font-size:11px;color:var(--muted)">${p.handle}</span>` : ''}
+        <span class="pt-type ${p.type}">${p.type === 'member' ? 'Member' : 'Guest'}</span>
+        <button class="pt-remove" data-idx="${i}" title="Remove">×</button>
+      </div>`).join('');
+
+    container.querySelectorAll('.pt-remove').forEach(btn => {
+      btn.addEventListener('click', () => removePlayer(Number(btn.dataset.idx)));
+    });
+  }
+
+  function wirePlayerSearch() {
+    const input   = document.getElementById('playerInput');
+    const addBtn  = document.getElementById('playerAddBtn');
+    const sugBox  = document.getElementById('playerSuggestions');
+
+    input.addEventListener('input', () => renderSuggestions(input.value));
+
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); tryAddFromInput(); }
+    });
+
+    addBtn.addEventListener('click', tryAddFromInput);
+
+    sugBox.addEventListener('click', e => {
+      const item = e.target.closest('.suggestion-item');
+      if (!item) return;
+
+      if (item.dataset.id) {
+        const user = ACCOUNTS.find(u => u.id === item.dataset.id);
+        if (user) addPlayer({ id: user.id, name: user.name, handle: user.handle,
+                               color: user.color, initials: user.initials, type: 'member' });
+      } else if (item.dataset.guest) {
+        const name = item.dataset.guest;
+        addPlayer({ id: null, name, handle: null,
+                    color: guestColor(name), initials: playerInitials(name), type: 'guest' });
+      }
+    });
+
+    // Close suggestions on outside click
+    document.addEventListener('click', e => {
+      if (!e.target.closest('#playerInput') && !e.target.closest('#playerSuggestions')) {
+        sugBox.classList.remove('visible');
+      }
+    });
+  }
+
+  function tryAddFromInput() {
+    const input = document.getElementById('playerInput');
+    const query = input.value.trim();
+    if (!query) return;
+
+    // Prefer exact member match, else add as guest
+    const matches = searchAccounts(query);
+    const exact = matches.find(u => u.name.toLowerCase() === query.toLowerCase());
+    if (exact && !pendingPlayers.some(p => p.id === exact.id)) {
+      addPlayer({ id: exact.id, name: exact.name, handle: exact.handle,
+                  color: exact.color, initials: exact.initials, type: 'member' });
+    } else {
+      const nameLower = query.toLowerCase();
+      if (!pendingPlayers.some(p => p.type === 'guest' && p.name.toLowerCase() === nameLower)) {
+        addPlayer({ id: null, name: query, handle: null,
+                    color: guestColor(query), initials: playerInitials(query), type: 'guest' });
+      }
+    }
+  }
+
+  // ─── Build grid ────────────────────────────────────────────────────────────
+  const NCOURTS = COURTS.length;
+
+  function buildGrid() {
+    const wrap    = document.getElementById('calendarWrap');
+    const headers = document.getElementById('colHeaders');
+    const body    = document.getElementById('calendarBody');
+
+    // Set CSS grid columns: time-label + one per court
+    const gridCols = `var(--label-w) repeat(${NCOURTS}, 1fr)`;
+    headers.style.gridTemplateColumns = gridCols;
+    body.style.gridTemplateColumns    = gridCols;
+
+    // Column headers
+    headers.innerHTML = `<div class="col-header col-header-label">Time</div>` +
+      COURTS.map(c => `<div class="col-header">${c.icon} ${c.name}</div>`).join('');
+
+    // Rows
+    body.innerHTML = '';
+
+    for (let slot = 0; slot < TOTAL_SLOTS; slot++) {
+      // Time label (only on the hour)
+      const labelEl = document.createElement('div');
+      labelEl.className = 'time-label' + (slot % 2 !== 0 ? ' half' : '');
+
+      if (slot % 2 === 0) {
+        const timeStr = slotToLabel(slot);
+        // Check if this slot is a tier boundary — show rate pill on the boundary hour
+        const tier = tierForSlot(slot);
+        const isBoundary = tier && tier.startH * SLOTS_PER_H === slot;
+        labelEl.innerHTML = isBoundary
+          ? `<span style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
+               <span>${timeStr}</span>
+               <span style="font-size:9px;font-weight:700;color:${tier.color};
+                 background:${tier.color}18;border:1px solid ${tier.color}40;
+                 border-radius:4px;padding:1px 4px;white-space:nowrap;">
+                 ${formatEur(tier.rate)}/h
+               </span>
+             </span>`
+          : timeStr;
+      }
+      body.appendChild(labelEl);
+
+      // One cell per court
+      COURTS.forEach(court => {
+        const cell = document.createElement('div');
+        const open = slotIsOpen(slot);
+        cell.className = 'cell' + (slot % 2 !== 0 ? ' half-hour' : '') +
+          (open ? ' available' : ' unavailable');
+        // Subtle tier tint on open cells
+        if (open) {
+          const tier = tierForSlot(slot);
+          if (tier) cell.style.setProperty('--tier-color', tier.color);
+          cell.classList.add('tier-tinted');
+        }
+        cell.dataset.court = court.id;
+        cell.dataset.slot  = slot;
+        body.appendChild(cell);
+      });
+    }
+
+    // Overlay booking blocks
+    renderAllBlocks();
+    // Wire drag events
+    wireDrag();
+  }
+
+  // ─── Render booking blocks as absolute overlays ───────────────────────────
+  function renderAllBlocks() {
+    document.querySelectorAll('.booking-block, .drag-preview').forEach(el => el.remove());
+
+    const body  = document.getElementById('calendarBody');
+    const slotH = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--slot-h'));
+    const labelW = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--label-w'));
+
+    COURTS.forEach((court, ci) => {
+      const seeded = getBookings(selectedDate)[court.id] || [];
+      const mine   = getUserBookings(selectedDate)
+        .filter(b => b.courtId === court.id)
+        .map(b => ({ start: b.start, end: b.end, type: 'mine', label: 'My Booking', players: b.players || [], cost: b.cost }));
+
+      [...seeded, ...mine].forEach(bk => {
+        const block = document.createElement('div');
+        block.className = `booking-block ${bk.type}`;
+
+        const colW = (body.clientWidth - labelW) / NCOURTS;
+        block.style.position = 'absolute';
+        block.style.top      = (bk.start * slotH) + 'px';
+        block.style.height   = ((bk.end - bk.start) * slotH - 2) + 'px';
+        block.style.left     = (labelW + ci * colW + 4) + 'px';
+        block.style.width    = (colW - 8) + 'px';
+
+        const playerAvatars = (bk.players || []).map(p =>
+          `<span style="display:inline-flex;align-items:center;justify-content:center;
+            width:16px;height:16px;border-radius:50%;font-size:8px;font-weight:700;
+            background:${p.color}30;color:${p.color};border:1px solid ${p.color}50;
+            margin-right:2px;" title="${p.name}">${p.initials}</span>`
+        ).join('');
+
+        block.innerHTML = `
+          <span class="bk-name">${bk.label}</span>
+          <span class="bk-time">${slotToTime(bk.start)} – ${slotToTime(bk.end)}</span>
+          ${bk.type === 'mine' && bk.cost != null ? `<span style="font-size:10px;font-weight:700;color:#86efac;opacity:0.9;">${formatEur(bk.cost)}</span>` : ''}
+          ${playerAvatars ? `<span style="margin-top:3px;display:flex;flex-wrap:wrap;">${playerAvatars}</span>` : ''}`;
+
+        body.appendChild(block);
+      });
+    });
+  }
+
+  // ─── Drag to select ────────────────────────────────────────────────────────
+  let drag = {
+    active: false,
+    courtId: null,
+    startSlot: null,
+    endSlot: null,
+    preview: null,
+  };
+
+  let pendingBooking = null;
+
+  function cellsInRange(courtId, s, e) {
+    const lo = Math.min(s, e), hi = Math.max(s, e);
+    return document.querySelectorAll(
+      `.cell[data-court="${courtId}"][data-slot]`
+    );
+  }
+
+  function clearSelecting() {
+    document.querySelectorAll('.cell.selecting').forEach(c => c.classList.remove('selecting'));
+    if (drag.preview) { drag.preview.remove(); drag.preview = null; }
+  }
+
+  function updatePreview() {
+    if (!drag.active) return;
+    const body    = document.getElementById('calendarBody');
+    const slotH   = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--slot-h'));
+    const labelW  = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--label-w'));
+    const colW    = (body.clientWidth - labelW) / NCOURTS;
+    const ci      = COURTS.findIndex(c => c.id === drag.courtId);
+
+    // Clamp end so duration never exceeds MAX_SLOTS
+    const rawLo   = Math.min(drag.startSlot, drag.endSlot);
+    const rawHi   = Math.max(drag.startSlot, drag.endSlot) + 1;
+    const clampedHi = Math.min(rawHi, drag.startSlot + MAX_SLOTS + 1);
+    // If dragging upward clamp differently
+    const lo = Math.min(drag.startSlot, clampedHi - 1);
+    const hi = Math.min(rawHi, lo + MAX_SLOTS);
+
+    if (drag.preview) drag.preview.remove();
+    const p = document.createElement('div');
+    p.className = 'drag-preview';
+    p.style.position = 'absolute';
+    p.style.top      = (lo * slotH) + 'px';
+    p.style.height   = ((hi - lo) * slotH) + 'px';
+    p.style.left     = (labelW + ci * colW + 4) + 'px';
+    p.style.width    = (colW - 8) + 'px';
+
+    const dur = hi - lo;
+    const atMax = dur >= MAX_SLOTS;
+    const { total } = calcCost(lo, hi);
+    p.innerHTML = `
+      <span style="display:flex;flex-direction:column;align-items:center;gap:2px;pointer-events:none;">
+        <span style="font-size:13px;">${formatDuration(dur)}${atMax ? ' <span style="opacity:.6;font-size:10px">(max)</span>' : ''}</span>
+        <span style="font-size:15px;font-weight:800;color:#fff;">${formatEur(total)}</span>
+      </span>`;
+    drag.preview = p;
+    body.appendChild(p);
+  }
+
+  function wireDrag() {
+    const body = document.getElementById('calendarBody');
+    const HOLD_MS = 300;  // ms of press before touch drag activates
+
+    // ── Shared finish logic (mouse + touch) ──────────────────────────────────
+    const finishDrag = () => {
+      if (!drag.active) return;
+      drag.active = false;
+      body.classList.remove('is-dragging');
+
+      const rawLo = Math.min(drag.startSlot, drag.endSlot);
+      const rawHi = Math.max(drag.startSlot, drag.endSlot) + 1;
+      const lo = rawLo;
+      const hi = Math.min(rawHi, lo + MAX_SLOTS);
+
+      clearSelecting();
+
+      if (lo < OPEN_SLOT || hi > CLOSE_SLOT + 1) {
+        if (drag.preview) { drag.preview.remove(); drag.preview = null; }
+        showToast('Courts are only available 7:00 AM – 11:00 PM');
+        return;
+      }
+
+      if (hasConflict(drag.courtId, lo, hi)) {
+        if (drag.preview) { drag.preview.remove(); drag.preview = null; }
+        showToast('That slot overlaps an existing booking');
+        return;
+      }
+
+      if (wouldLeaveGap(drag.courtId, lo, hi)) {
+        if (drag.preview) { drag.preview.remove(); drag.preview = null; }
+        showToast('This would leave a 30-min gap — extend or shrink your booking to avoid it');
+        return;
+      }
+
+      if (drag.preview) { drag.preview.remove(); drag.preview = null; }
+
+      const court = COURTS.find(c => c.id === drag.courtId);
+      pendingBooking = { courtId: drag.courtId, start: lo, end: hi };
+
+      const dateStr = selectedDate.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+      const { total, segments } = calcCost(lo, hi);
+
+      document.getElementById('mCourt').innerHTML    = `<strong>${court.icon} ${court.name}</strong>`;
+      document.getElementById('mDate').innerHTML     = `<strong>${dateStr}</strong>`;
+      document.getElementById('mTime').innerHTML     = `<strong>${slotToTime(lo)} – ${slotToTime(hi)}</strong>`;
+      document.getElementById('mDuration').innerHTML = `<strong>${formatDuration(hi - lo)}</strong>`;
+      document.getElementById('mPrice').innerHTML    = `<strong style="font-size:16px;color:var(--accent2)">${formatEur(total)}</strong>`;
+
+      const breakdownEl = document.getElementById('mPriceBreakdown');
+      if (segments.length > 1) {
+        breakdownEl.innerHTML = `
+          <div style="margin:-4px 0 12px 26px;display:flex;flex-direction:column;gap:4px;">
+            ${segments.map(s => `
+              <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);">
+                <span style="width:8px;height:8px;border-radius:2px;background:${s.tier.color};flex-shrink:0;display:inline-block;"></span>
+                <span>${s.tier.label} (${formatEur(s.tier.rate)}/h × ${s.hrs}h)</span>
+                <span style="margin-left:auto;color:var(--text);font-weight:600;">${formatEur(s.cost)}</span>
+              </div>`).join('')}
+          </div>`;
+      } else {
+        breakdownEl.innerHTML = '';
+      }
+      resetPlayerUI();
+      goToStep(1);
+      document.getElementById('modalBackdrop').classList.add('open');
+      requestAnimationFrame(() => document.getElementById('playerInput').focus());
+    };
+
+    // ── Mouse events (desktop) ───────────────────────────────────────────────
+    body.addEventListener('mousedown', e => {
+      const cell = e.target.closest('.cell');
+      if (!cell || !cell.classList.contains('available')) return;
+      e.preventDefault();
+      body.classList.add('is-dragging');
+      drag = { active: true, courtId: Number(cell.dataset.court),
+               startSlot: Number(cell.dataset.slot), endSlot: Number(cell.dataset.slot), preview: null };
+      updatePreview();
+    });
+
+    body.addEventListener('mousemove', e => {
+      if (!drag.active) return;
+      const cell = e.target.closest('.cell');
+      if (!cell || Number(cell.dataset.court) !== drag.courtId) return;
+      const slot = Number(cell.dataset.slot);
+      if (!slotIsOpen(slot)) return;
+      drag.endSlot = slot;
+      updatePreview();
+    });
+
+    window.addEventListener('mouseup', finishDrag);
+
+    // ── Touch events (mobile) — hold to activate ─────────────────────────────
+    let touchHoldTimer  = null;   // fires after HOLD_MS to activate drag
+    let touchDragActive = false;  // true once hold threshold passed
+    let touchStartCell  = null;
+
+    // Vibrate helper (silent-fail on unsupported browsers)
+    const vibrate = ms => { try { navigator.vibrate?.(ms); } catch(_) {} };
+
+    // Translate a Touch to the cell it's over
+    const cellFromTouch = t => {
+      const el = document.elementFromPoint(t.clientX, t.clientY);
+      return el?.closest('.cell') || null;
+    };
+
+    body.addEventListener('touchstart', e => {
+      const cell = cellFromTouch(e.touches[0]);
+      if (!cell || !cell.classList.contains('available')) return;
+
+      touchStartCell  = cell;
+      touchDragActive = false;
+
+      // Start the hold timer — do NOT preventDefault yet so scroll still works
+      touchHoldTimer = setTimeout(() => {
+        touchDragActive = true;
+        vibrate(40);   // short haptic pulse to signal activation
+
+        body.classList.add('is-dragging');
+        drag = { active: true, courtId: Number(cell.dataset.court),
+                 startSlot: Number(cell.dataset.slot), endSlot: Number(cell.dataset.slot), preview: null };
+        updatePreview();
+      }, HOLD_MS);
+    }, { passive: true });
+
+    body.addEventListener('touchmove', e => {
+      if (!touchDragActive) {
+        // Hold not yet triggered — cancel if finger moved significantly
+        // (let the browser handle as a normal scroll)
+        clearTimeout(touchHoldTimer);
+        touchHoldTimer = null;
+        return;
+      }
+
+      // Drag is active — block scroll and extend selection
+      e.preventDefault();
+
+      const cell = cellFromTouch(e.touches[0]);
+      if (!cell || Number(cell.dataset.court) !== drag.courtId) return;
+      const slot = Number(cell.dataset.slot);
+      if (!slotIsOpen(slot)) return;
+      drag.endSlot = slot;
+      updatePreview();
+    }, { passive: false });
+
+    body.addEventListener('touchend', e => {
+      clearTimeout(touchHoldTimer);
+      touchHoldTimer = null;
+
+      if (!touchDragActive) {
+        // Plain tap — not a booking action, do nothing
+        touchDragActive = false;
+        return;
+      }
+
+      touchDragActive = false;
+      finishDrag();
+    });
+
+    body.addEventListener('touchcancel', () => {
+      clearTimeout(touchHoldTimer);
+      touchHoldTimer  = null;
+      touchDragActive = false;
+      if (drag.active) {
+        drag.active = false;
+        body.classList.remove('is-dragging');
+        if (drag.preview) { drag.preview.remove(); drag.preview = null; }
+      }
+    });
+  }
+
+  // ─── Multi-step modal ──────────────────────────────────────────────────────
+  let currentStep = 1;
+
+  function goToStep(n) {
+    // Hide all steps
+    document.querySelectorAll('.modal-step').forEach(s => s.classList.add('hidden'));
+    document.getElementById(`step${n}`).classList.remove('hidden');
+
+    // Update step indicator
+    document.querySelectorAll('.step-item').forEach(item => {
+      const s = Number(item.dataset.step);
+      item.classList.toggle('active', s === n);
+      item.classList.toggle('done', s < n);
+    });
+    document.querySelectorAll('.step-line').forEach((line, i) => {
+      line.classList.toggle('done', i + 1 < n);
+    });
+
+    currentStep = n;
+
+    // Step-specific setup
+    if (n === 2) setupPaymentStep();
+    if (n === 3) setupSuccessStep();
+  }
+
+  // ── Step 1 wiring ──
+  document.getElementById('step1Cancel').addEventListener('click', () => {
+    document.getElementById('modalBackdrop').classList.remove('open');
+    pendingBooking = null;
+    resetPlayerUI();
+  });
+
+  document.getElementById('step1Next').addEventListener('click', () => {
+    goToStep(2);
+  });
+
+  // ── Step 2 — payment ──
+  function setupPaymentStep() {
+    const { total } = calcCost(pendingBooking.start, pendingBooking.end);
+    const court     = COURTS.find(c => c.id === pendingBooking.courtId);
+    const dateStr   = selectedDate.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+
+    document.getElementById('pillLabel').textContent  = `${court.icon} ${court.name} · ${dateStr}`;
+    document.getElementById('pillTotal').textContent  = formatEur(total);
+    document.getElementById('step2PayAmount').textContent = formatEur(total);
+
+    // Show/hide new card form
+    document.querySelectorAll('input[name="payMethod"]').forEach(r => {
+      r.addEventListener('change', () => {
+        const form = document.getElementById('newCardForm');
+        form.classList.toggle('hidden', r.value !== 'new');
+      });
+    });
+  }
+
+  // Card number formatting helper
+  document.getElementById('cardNumber').addEventListener('input', e => {
+    let v = e.target.value.replace(/\D/g, '').slice(0, 16);
+    e.target.value = v.replace(/(.{4})/g, '$1 ').trim();
+  });
+
+  document.getElementById('cardExpiry').addEventListener('input', e => {
+    let v = e.target.value.replace(/\D/g, '').slice(0, 4);
+    if (v.length >= 3) v = v.slice(0,2) + ' / ' + v.slice(2);
+    e.target.value = v;
+  });
+
+  document.getElementById('cardCvc').addEventListener('input', e => {
+    e.target.value = e.target.value.replace(/\D/g, '').slice(0, 4);
+  });
+
+  document.getElementById('step2Back').addEventListener('click', () => goToStep(1));
+
+  document.getElementById('step2Pay').addEventListener('click', () => {
+    const method = document.querySelector('input[name="payMethod"]:checked').value;
+
+    if (method === 'new') {
+      // Basic validation
+      const num  = document.getElementById('cardNumber').value.replace(/\s/g, '');
+      const exp  = document.getElementById('cardExpiry').value;
+      const cvc  = document.getElementById('cardCvc').value;
+      const name = document.getElementById('cardName').value.trim();
+
+      let valid = true;
+      [['cardNumber', num.length < 16],
+       ['cardExpiry', exp.length < 7],
+       ['cardCvc',    cvc.length < 3],
+       ['cardName',   !name]].forEach(([id, bad]) => {
+        document.getElementById(id).classList.toggle('error', bad);
+        if (bad) valid = false;
+      });
+      if (!valid) { shakeModal(); return; }
+    }
+
+    // Simulate processing
+    const btn = document.getElementById('step2Pay');
+    btn.disabled = true;
+    btn.textContent = 'Processing…';
+
+    setTimeout(() => {
+      btn.disabled = false;
+      btn.innerHTML = `Pay <span id="step2PayAmount">${document.getElementById('pillTotal').textContent}</span>`;
+      confirmAndAdvance();
+    }, 1200);
+  });
+
+  function shakeModal() {
+    const m = document.querySelector('.modal');
+    m.style.animation = 'none';
+    m.offsetHeight; // reflow
+    m.style.animation = 'shake 0.35s ease';
+  }
+
+  // ── Step 3 — success ──
+  function setupSuccessStep() {
+    const court   = COURTS.find(c => c.id === pendingBooking.courtId);
+    const dateStr = selectedDate.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+    const cost    = calcCost(pendingBooking.start, pendingBooking.end).total;
+
+    document.getElementById('successSub').textContent =
+      `Your court is reserved. See you on the court!`;
+
+    const rows = [
+      ['Court',    `${court.icon} ${court.name}`],
+      ['Date',     dateStr],
+      ['Time',     `${slotToTime(pendingBooking.start)} – ${slotToTime(pendingBooking.end)}`],
+      ['Duration', formatDuration(pendingBooking.end - pendingBooking.start)],
+      ['Paid',     formatEur(cost)],
+    ];
+
+    if (pendingPlayers.length > 0) {
+      rows.push(['Players', pendingPlayers.map(p => p.name).join(', ')]);
+    }
+
+    document.getElementById('successDetails').innerHTML = rows.map(([l, v]) => `
+      <div class="success-detail-row">
+        <span>${l}</span><span>${v}</span>
+      </div>`).join('');
+
+    // Re-trigger SVG animation by cloning the icon
+    const icon = document.getElementById('successIcon');
+    const clone = icon.cloneNode(true);
+    icon.replaceWith(clone);
+  }
+
+  function confirmAndAdvance() {
+    // Commit the booking to state
+    getUserBookings(selectedDate).push({
+      ...pendingBooking,
+      id: Date.now(),
+      players: [...pendingPlayers],
+      cost: calcCost(pendingBooking.start, pendingBooking.end).total,
+    });
+
+    renderAllBlocks();
+    renderMyBookings();
+    goToStep(3);
+  }
+
+  document.getElementById('step3Done').addEventListener('click', () => {
+    document.getElementById('modalBackdrop').classList.remove('open');
+    pendingBooking = null;
+    resetPlayerUI();
+    showToast('Booking confirmed!');
+  });
+
+  // ─── My bookings panel ─────────────────────────────────────────────────────
+  function renderMyBookings() {
+    const container = document.getElementById('myBookingsList');
+    const all = DATES.flatMap(d =>
+      (allUserBookings[dateKey(d)] || []).map(b => ({ ...b, date: d }))
+    );
+
+    if (all.length === 0) {
+      container.innerHTML = '<span class="empty-state">No bookings yet — drag a time slot to get started.</span>';
+      return;
+    }
+
+    container.innerHTML = all.map(b => {
+      const court   = COURTS.find(c => c.id === b.courtId);
+      const dateStr = b.date.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+      const players = b.players || [];
+
+      const avatars = players.map(p => `
+        <div class="chip-player-avatar"
+             style="background:${p.color}25;color:${p.color};border:1px solid ${p.color}40"
+             title="${p.name}${p.type === 'guest' ? ' (guest)' : ''}">${p.initials}</div>`
+      ).join('');
+
+      return `
+        <div class="my-booking-chip" style="flex-direction:column;align-items:flex-start;gap:6px;">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <span>${court.icon}</span>
+            <span class="chip-court">${court.name}</span>
+            <span class="chip-date">${dateStr}</span>
+            <span class="chip-time">${slotToTime(b.start)} – ${slotToTime(b.end)}</span>
+            ${b.cost != null ? `<span style="margin-left:auto;font-weight:700;color:var(--accent2);">${formatEur(b.cost)}</span>` : ''}
+          </div>
+          ${players.length > 0 ? `<div class="chip-players">${avatars}</div>` : ''}
+        </div>`;
+    }).join('');
+  }
+
+  // ─── Date strip ────────────────────────────────────────────────────────────
+  function buildDateStrip() {
+    const strip = document.getElementById('dateStrip');
+    strip.innerHTML = DATES.map((d, i) => {
+      const isToday = i === 0;
+      const dayName = d.toLocaleDateString('en-GB', { weekday: 'short' });
+      const dayNum  = d.getDate();
+      const month   = d.toLocaleDateString('en-GB', { month: 'short' });
+      return `
+        <button class="date-btn${i === 0 ? ' active' : ''}" data-idx="${i}">
+          <span class="day-name">${isToday ? 'Today' : dayName}</span>
+          <span class="day-num">${dayNum}</span>
+          <span class="day-month">${month}</span>
+        </button>`;
+    }).join('');
+
+    strip.addEventListener('click', e => {
+      const btn = e.target.closest('.date-btn');
+      if (!btn) return;
+      const idx = Number(btn.dataset.idx);
+      strip.querySelectorAll('.date-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      selectedDate = DATES[idx];
+      renderAllBlocks();
+    });
+  }
+
+  // ─── Init ──────────────────────────────────────────────────────────────────
+  buildDateStrip();
+  buildGrid();
+  wirePlayerSearch();
+
+  // Re-render blocks on resize (columns change width)
+  window.addEventListener('resize', () => renderAllBlocks());
+
+  // Scroll to 7 AM on load
+  requestAnimationFrame(() => {
+    const body  = document.getElementById('calendarBody');
+    const slotH = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--slot-h'));
+    body.scrollTop = OPEN_SLOT * slotH - 20;
+  });
+</script>
+</body>
+</html>

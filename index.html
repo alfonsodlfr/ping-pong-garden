@@ -1,0 +1,1038 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ping Pong Garden</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --lime:    #c8d62b;
+      --black:   #0d0d0d;
+      --white:   #ffffff;
+      --gray:    #f5f5f2;
+      --muted:   #888;
+      --text:    #1a1a1a;
+      --border:  #e5e5e0;
+      --nav-h:   64px;
+      --serif:   'Georgia', 'Times New Roman', serif;
+      --sans:    'Helvetica Neue', 'Arial', sans-serif;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--sans);
+      background: var(--white);
+      color: var(--text);
+      overflow-x: hidden;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: var(--nav-h);
+      background: rgba(255,255,255,0.92);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 40px;
+    }
+
+    /* Logo mark */
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+    }
+
+    .logo-box {
+      width: 42px;
+      height: 42px;
+      background: var(--lime);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 4px 5px 3px;
+      gap: 0;
+    }
+
+    .logo-box .l1 {
+      font-family: var(--sans);
+      font-size: 11.5px;
+      font-weight: 900;
+      letter-spacing: -0.3px;
+      color: var(--black);
+      line-height: 1;
+    }
+
+    .logo-box .l2 {
+      font-family: var(--sans);
+      font-size: 11.5px;
+      font-weight: 900;
+      letter-spacing: -0.3px;
+      color: var(--black);
+      line-height: 1;
+    }
+
+    .logo-box .l3 {
+      font-size: 6px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      color: var(--black);
+      line-height: 1;
+      margin-top: 3px;
+      text-transform: uppercase;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 6px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--muted);
+      padding: 8px 16px;
+      border-radius: 6px;
+      transition: color 0.15s, background 0.15s;
+    }
+
+    .nav-links a:hover       { color: var(--text); background: var(--gray); }
+    .nav-links a.active      { color: var(--text); font-weight: 700; }
+
+    .nav-links a.book-btn {
+      background: var(--lime);
+      color: var(--black);
+      font-weight: 700;
+      border-radius: 999px;
+    }
+
+    .nav-links a.book-btn:hover {
+      background: #b5c220;
+      color: var(--black);
+    }
+
+    /* ── HERO ── */
+    .hero {
+      height: 100vh;
+      min-height: 640px;
+      position: relative;
+      display: flex;
+      align-items: flex-end;
+      overflow: hidden;
+    }
+
+    /* animated table-tennis background */
+    .hero-bg {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 60% 40%, #c8d62b22 0%, transparent 70%),
+        linear-gradient(160deg, #0d0d0d 0%, #1a1f0a 50%, #0d0d0d 100%);
+    }
+
+    /* court lines overlay */
+    .hero-court {
+      position: absolute;
+      inset: 0;
+      opacity: 0.07;
+      background-image:
+        /* horizontal net line */
+        linear-gradient(to right, transparent 0%, #fff 0%, #fff 100%, transparent 100%),
+        /* vertical centre */
+        linear-gradient(to bottom, transparent 0%, #fff 0%, #fff 100%, transparent 100%);
+      background-size: 100% 2px, 2px 100%;
+      background-position: center center;
+      background-repeat: no-repeat;
+    }
+
+    /* floating ball */
+    .hero-ball {
+      position: absolute;
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #fff 0%, #f5f5f5 40%, #d0d0d0 100%);
+      box-shadow: 0 4px 24px rgba(0,0,0,0.5), inset 0 -3px 8px rgba(0,0,0,0.15);
+      animation: floatBall 8s ease-in-out infinite;
+      top: 22%;
+      right: 18%;
+    }
+
+    @keyframes floatBall {
+      0%   { transform: translate(0, 0) rotate(0deg); }
+      25%  { transform: translate(-30px, 40px) rotate(90deg); }
+      50%  { transform: translate(20px, -20px) rotate(180deg); }
+      75%  { transform: translate(-15px, 20px) rotate(270deg); }
+      100% { transform: translate(0, 0) rotate(360deg); }
+    }
+
+    /* paddle silhouettes */
+    .hero-paddle {
+      position: absolute;
+      opacity: 0.06;
+    }
+
+    .hero-paddle-1 {
+      width: 280px;
+      bottom: 10%;
+      right: 5%;
+      transform: rotate(-30deg);
+      animation: driftPaddle1 12s ease-in-out infinite;
+    }
+
+    .hero-paddle-2 {
+      width: 200px;
+      top: 15%;
+      left: 8%;
+      transform: rotate(20deg);
+      animation: driftPaddle2 15s ease-in-out infinite;
+    }
+
+    @keyframes driftPaddle1 {
+      0%,100% { transform: rotate(-30deg) translate(0,0); }
+      50%     { transform: rotate(-26deg) translate(10px,-15px); }
+    }
+
+    @keyframes driftPaddle2 {
+      0%,100% { transform: rotate(20deg) translate(0,0); }
+      50%     { transform: rotate(23deg) translate(-8px,12px); }
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 2;
+      padding: 0 60px 80px;
+      max-width: 760px;
+    }
+
+    .hero-eyebrow {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--lime);
+      margin-bottom: 20px;
+    }
+
+    .hero-title {
+      font-family: var(--sans);
+      font-size: clamp(52px, 7vw, 96px);
+      font-weight: 900;
+      line-height: 0.95;
+      letter-spacing: -2px;
+      color: var(--white);
+      margin-bottom: 28px;
+    }
+
+    .hero-title em {
+      font-style: normal;
+      color: var(--lime);
+    }
+
+    .hero-desc {
+      font-size: 17px;
+      line-height: 1.6;
+      color: rgba(255,255,255,0.65);
+      max-width: 480px;
+      margin-bottom: 36px;
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .btn-primary {
+      background: var(--lime);
+      color: var(--black);
+      font-size: 15px;
+      font-weight: 800;
+      padding: 14px 28px;
+      border-radius: 999px;
+      text-decoration: none;
+      transition: background 0.15s, transform 0.1s;
+      letter-spacing: -0.2px;
+    }
+
+    .btn-primary:hover  { background: #b5c220; }
+    .btn-primary:active { transform: scale(0.97); }
+
+    .btn-ghost {
+      background: transparent;
+      color: rgba(255,255,255,0.7);
+      font-size: 15px;
+      font-weight: 600;
+      padding: 14px 28px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.2);
+      text-decoration: none;
+      transition: border-color 0.15s, color 0.15s;
+    }
+
+    .btn-ghost:hover { border-color: rgba(255,255,255,0.5); color: #fff; }
+
+    /* scroll cue */
+    .scroll-cue {
+      position: absolute;
+      bottom: 28px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      color: rgba(255,255,255,0.3);
+      font-size: 11px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      animation: bounce 2s ease-in-out infinite;
+    }
+
+    @keyframes bounce {
+      0%,100% { transform: translateX(-50%) translateY(0); }
+      50%     { transform: translateX(-50%) translateY(6px); }
+    }
+
+    .scroll-cue svg { opacity: 0.4; }
+
+    /* ── STATS BAR ── */
+    .stats-bar {
+      background: var(--lime);
+      padding: 20px 60px;
+      display: flex;
+      gap: 0;
+      justify-content: space-around;
+      flex-wrap: wrap;
+    }
+
+    .stat {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      padding: 6px 20px;
+    }
+
+    .stat-num {
+      font-size: 28px;
+      font-weight: 900;
+      color: var(--black);
+      letter-spacing: -1px;
+    }
+
+    .stat-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: rgba(0,0,0,0.55);
+    }
+
+    /* ── SECTION SHARED ── */
+    section {
+      max-width: 1160px;
+      margin: 0 auto;
+      padding: 80px 40px;
+    }
+
+    .section-eyebrow {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--lime);
+      margin-bottom: 12px;
+    }
+
+    /* make eyebrow lime visible on white bg */
+    .section-eyebrow { color: #7a8500; }
+
+    .section-title {
+      font-size: clamp(28px, 4vw, 44px);
+      font-weight: 900;
+      letter-spacing: -1px;
+      color: var(--black);
+      margin-bottom: 48px;
+      line-height: 1.05;
+    }
+
+    /* ── FEED ── */
+    .feed-grid {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 20px;
+    }
+
+    /* Hero post — spans 8 cols */
+    .post-card {
+      border-radius: 12px;
+      overflow: hidden;
+      background: var(--gray);
+      display: flex;
+      flex-direction: column;
+      text-decoration: none;
+      color: inherit;
+      transition: transform 0.2s, box-shadow 0.2s;
+      cursor: pointer;
+    }
+
+    .post-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 16px 48px rgba(0,0,0,0.10);
+    }
+
+    .post-card.featured { grid-column: span 7; }
+    .post-card.tall     { grid-column: span 5; }
+    .post-card.medium   { grid-column: span 4; }
+    .post-card.wide     { grid-column: span 8; flex-direction: row; }
+
+    .post-img {
+      width: 100%;
+      aspect-ratio: 16/10;
+      object-fit: cover;
+      display: block;
+      background: #c8d62b30;
+    }
+
+    .post-card.tall .post-img   { aspect-ratio: 4/5; }
+    .post-card.wide .post-img   { width: 44%; aspect-ratio: auto; flex-shrink: 0; }
+
+    /* Placeholder visuals using CSS art */
+    .post-img.court-art {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .post-img.court-art::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+    }
+
+    .post-img.art-1 { background: linear-gradient(135deg, #0d0d0d 0%, #1a2a0a 60%, #c8d62b 100%); }
+    .post-img.art-2 { background: linear-gradient(160deg, #c8d62b 0%, #8fa010 50%, #0d0d0d 100%); }
+    .post-img.art-3 { background: linear-gradient(120deg, #1a1a1a 0%, #2d2d1a 100%); }
+    .post-img.art-4 { background: linear-gradient(200deg, #0a0a0a 0%, #c8d62b 130%); }
+    .post-img.art-5 { background: linear-gradient(45deg,  #c8d62b 0%, #e8f040 40%, #7a8500 100%); }
+
+    /* table lines in art */
+    .post-img.art-1::after {
+      content: '';
+      position: absolute;
+      left: 50%;
+      top: 0; bottom: 0;
+      width: 2px;
+      background: rgba(255,255,255,0.15);
+    }
+
+    .post-img.art-3::after {
+      content: '';
+      position: absolute;
+      inset: 15%;
+      border: 2px solid rgba(200,214,43,0.3);
+      border-radius: 4px;
+    }
+
+    .post-body {
+      padding: 20px 22px 22px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .post-tag {
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #7a8500;
+      margin-bottom: 8px;
+    }
+
+    .post-title {
+      font-size: 17px;
+      font-weight: 800;
+      line-height: 1.25;
+      color: var(--black);
+      margin-bottom: 10px;
+      letter-spacing: -0.3px;
+    }
+
+    .post-card.featured .post-title { font-size: 22px; }
+
+    .post-excerpt {
+      font-size: 13px;
+      line-height: 1.6;
+      color: var(--muted);
+      flex: 1;
+    }
+
+    .post-meta {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 16px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .post-meta .dot { opacity: 0.4; }
+
+    .post-avatar {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: var(--lime);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: 800;
+      color: var(--black);
+      flex-shrink: 0;
+    }
+
+    /* ── UPCOMING EVENTS strip ── */
+    .events-section {
+      background: var(--black);
+      padding: 0;
+    }
+
+    .events-inner {
+      max-width: 1160px;
+      margin: 0 auto;
+      padding: 80px 40px;
+    }
+
+    .events-section .section-eyebrow { color: var(--lime); }
+    .events-section .section-title   { color: var(--white); margin-bottom: 40px; }
+
+    .events-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .event-row {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      padding: 22px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      text-decoration: none;
+      color: inherit;
+      transition: background 0.15s;
+      border-radius: 8px;
+      padding-left: 8px;
+      padding-right: 8px;
+    }
+
+    .event-row:first-child { border-top: 1px solid rgba(255,255,255,0.08); }
+    .event-row:hover { background: rgba(255,255,255,0.04); }
+
+    .event-date {
+      width: 52px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background: rgba(200,214,43,0.1);
+      border: 1px solid rgba(200,214,43,0.2);
+      border-radius: 8px;
+      padding: 8px 6px;
+    }
+
+    .event-date-d {
+      font-size: 22px;
+      font-weight: 900;
+      color: var(--lime);
+      line-height: 1;
+    }
+
+    .event-date-m {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: rgba(200,214,43,0.6);
+    }
+
+    .event-info { flex: 1; }
+
+    .event-name {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--white);
+      margin-bottom: 4px;
+    }
+
+    .event-detail {
+      font-size: 13px;
+      color: rgba(255,255,255,0.45);
+    }
+
+    .event-badge {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 20px;
+      white-space: nowrap;
+    }
+
+    .badge-open    { background: rgba(200,214,43,0.15); color: var(--lime); border: 1px solid rgba(200,214,43,0.3); }
+    .badge-limited { background: rgba(239,68,68,0.15);  color: #f87171;    border: 1px solid rgba(239,68,68,0.3); }
+    .badge-free    { background: rgba(34,197,94,0.15);  color: #4ade80;    border: 1px solid rgba(34,197,94,0.3); }
+
+    .event-row-arrow {
+      color: rgba(255,255,255,0.2);
+      font-size: 18px;
+      flex-shrink: 0;
+      transition: color 0.15s, transform 0.15s;
+    }
+
+    .event-row:hover .event-row-arrow {
+      color: var(--lime);
+      transform: translateX(4px);
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      background: var(--black);
+      border-top: 1px solid rgba(255,255,255,0.06);
+      padding: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .footer-copy {
+      font-size: 13px;
+      color: rgba(255,255,255,0.3);
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 20px;
+      list-style: none;
+    }
+
+    .footer-links a {
+      font-size: 13px;
+      color: rgba(255,255,255,0.3);
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+
+    .footer-links a:hover { color: rgba(255,255,255,0.7); }
+
+    /* ── MOBILE ── */
+    @media (max-width: 680px) {
+
+      /* Nav */
+      nav {
+        padding: 0 16px;
+        height: 54px;
+      }
+
+      .nav-links a {
+        font-size: 13px;
+        padding: 7px 12px;
+      }
+
+      /* Hero */
+      .hero { min-height: 100svh; }
+
+      .hero-content {
+        padding: 0 20px 72px;
+      }
+
+      .hero-eyebrow {
+        font-size: 10px;
+        letter-spacing: 2px;
+        margin-bottom: 14px;
+      }
+
+      .hero-title {
+        letter-spacing: -1.5px;
+        margin-bottom: 20px;
+      }
+
+      .hero-desc {
+        font-size: 15px;
+        margin-bottom: 28px;
+      }
+
+      .hero-actions {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .btn-primary, .btn-ghost {
+        width: 100%;
+        text-align: center;
+        padding: 14px 20px;
+      }
+
+      /* Hide decorative paddles on small screens */
+      .hero-paddle { display: none; }
+
+      /* Stats bar */
+      .stats-bar {
+        padding: 16px 12px;
+        gap: 0;
+      }
+
+      .stat {
+        width: 50%;
+        padding: 10px 8px;
+        border-bottom: 1px solid rgba(0,0,0,0.08);
+      }
+
+      .stat:nth-child(odd)  { border-right: 1px solid rgba(0,0,0,0.08); }
+      .stat:nth-child(3),
+      .stat:nth-child(4)    { border-bottom: none; }
+
+      .stat-num   { font-size: 22px; }
+      .stat-label { font-size: 10px; }
+
+      /* Section padding */
+      section { padding: 48px 16px; }
+
+      .section-title { margin-bottom: 28px; }
+
+      /* Feed — all cards full width, stacked */
+      .feed-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+      }
+
+      .post-card.featured,
+      .post-card.tall,
+      .post-card.medium,
+      .post-card.wide {
+        grid-column: span 1;
+        flex-direction: column;
+      }
+
+      /* Restore image ratio for all cards */
+      .post-card .post-img          { aspect-ratio: 16/9; width: 100%; }
+      .post-card.tall .post-img     { aspect-ratio: 16/9; }
+
+      .post-body { padding: 16px 16px 18px; }
+      .post-title { font-size: 16px; }
+      .post-card.featured .post-title { font-size: 18px; }
+      .post-excerpt { display: none; } /* reclaim space on small screens */
+
+      /* Events */
+      .events-inner { padding: 48px 16px; }
+
+      .event-row {
+        gap: 12px;
+        padding: 16px 8px;
+        flex-wrap: wrap;
+      }
+
+      .event-name   { font-size: 14px; }
+      .event-detail { font-size: 12px; }
+
+      /* Hide badge on very small screens, keep arrow */
+      .event-badge  { display: none; }
+
+      /* Footer */
+      footer {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 28px 16px;
+        gap: 20px;
+      }
+
+      .footer-links {
+        flex-wrap: wrap;
+        gap: 12px 20px;
+      }
+    }
+
+    /* ── TABLET (681–1024px) ── */
+    @media (min-width: 681px) and (max-width: 1024px) {
+
+      nav { padding: 0 24px; }
+
+      .hero-content { padding: 0 32px 80px; }
+
+      .stats-bar { padding: 20px 24px; }
+
+      section { padding: 60px 24px; }
+
+      .events-inner { padding: 60px 24px; }
+
+      footer { padding: 32px 24px; }
+
+      /* Feed — featured spans full width, rest in 2 cols */
+      .feed-grid { grid-template-columns: repeat(2, 1fr); gap: 16px; }
+
+      .post-card.featured { grid-column: span 2; flex-direction: row; }
+      .post-card.featured .post-img {
+        width: 45%;
+        aspect-ratio: auto;
+        flex-shrink: 0;
+      }
+      .post-card.tall   { grid-column: span 1; }
+      .post-card.medium { grid-column: span 1; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── NAVIGATION ── -->
+<nav>
+  <a class="logo" href="index.html">
+    <div class="logo-box">
+      <span class="l1">PING.</span>
+      <span class="l2">PONG</span>
+      <span class="l3">GARDEN</span>
+    </div>
+  </a>
+  <ul class="nav-links">
+    <li><a href="index.html" class="active">Home</a></li>
+    <li><a href="court-booking.html" class="book-btn">Bookings</a></li>
+  </ul>
+</nav>
+
+<!-- ── HERO ── -->
+<div class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-court"></div>
+
+  <!-- floating ball -->
+  <div class="hero-ball"></div>
+
+  <!-- paddle silhouettes -->
+  <svg class="hero-paddle hero-paddle-1" viewBox="0 0 200 220" fill="none">
+    <ellipse cx="100" cy="90" rx="80" ry="88" fill="white"/>
+    <rect x="88" y="170" width="24" height="50" rx="10" fill="white"/>
+  </svg>
+  <svg class="hero-paddle hero-paddle-2" viewBox="0 0 200 220" fill="none">
+    <ellipse cx="100" cy="90" rx="80" ry="88" fill="white"/>
+    <rect x="88" y="170" width="24" height="50" rx="10" fill="white"/>
+  </svg>
+
+  <div class="hero-content">
+    <p class="hero-eyebrow">Berlin's finest table tennis club</p>
+    <h1 class="hero-title">Play.<br><em>Connect.</em><br>Rally.</h1>
+    <p class="hero-desc">
+      Six professional courts, an open community, and a garden terrace.
+      Drop in any time or book your court in seconds.
+    </p>
+    <div class="hero-actions">
+      <a href="court-booking.html" class="btn-primary">Book a court</a>
+      <a href="#feed" class="btn-ghost">What's on</a>
+    </div>
+  </div>
+
+  <div class="scroll-cue">
+    <svg width="16" height="10" viewBox="0 0 16 10" fill="none">
+      <path d="M1 1l7 8 7-8" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </div>
+</div>
+
+<!-- ── STATS BAR ── -->
+<div class="stats-bar">
+  <div class="stat">
+    <span class="stat-num">6</span>
+    <span class="stat-label">Courts</span>
+  </div>
+  <div class="stat">
+    <span class="stat-num">7AM–11PM</span>
+    <span class="stat-label">Open daily</span>
+  </div>
+  <div class="stat">
+    <span class="stat-num">1,200+</span>
+    <span class="stat-label">Members</span>
+  </div>
+  <div class="stat">
+    <span class="stat-num">€10</span>
+    <span class="stat-label">From per hour</span>
+  </div>
+</div>
+
+<!-- ── POST FEED ── -->
+<section id="feed">
+  <p class="section-eyebrow">Latest from the garden</p>
+  <h2 class="section-title">News & Stories</h2>
+
+  <div class="feed-grid">
+
+    <!-- Featured -->
+    <a class="post-card featured" href="#">
+      <div class="post-img court-art art-1"></div>
+      <div class="post-body">
+        <span class="post-tag">Tournament</span>
+        <h3 class="post-title">Summer Open 2025 — Registration now live</h3>
+        <p class="post-excerpt">Our biggest event of the year returns. 64-player bracket, prize pool, and a cold beer for every participant. Sign up before spots are gone.</p>
+        <div class="post-meta">
+          <div class="post-avatar">MK</div>
+          <span>Marco K.</span>
+          <span class="dot">·</span>
+          <span>2 days ago</span>
+        </div>
+      </div>
+    </a>
+
+    <!-- Tall side card -->
+    <a class="post-card tall" href="#">
+      <div class="post-img court-art art-2"></div>
+      <div class="post-body">
+        <span class="post-tag">Announcement</span>
+        <h3 class="post-title">Court 5 & 6 now open after renovation</h3>
+        <p class="post-excerpt">New Stiga tables, fresh lighting, and spring-loaded floors. Come try them out this weekend.</p>
+        <div class="post-meta">
+          <div class="post-avatar">SL</div>
+          <span>Sara L.</span>
+          <span class="dot">·</span>
+          <span>5 days ago</span>
+        </div>
+      </div>
+    </a>
+
+    <!-- Row 2 -->
+    <a class="post-card medium" href="#">
+      <div class="post-img court-art art-3"></div>
+      <div class="post-body">
+        <span class="post-tag">Community</span>
+        <h3 class="post-title">Tuesday beginner nights are back</h3>
+        <p class="post-excerpt">Free coaching every Tuesday from 19:00. All levels welcome — just show up.</p>
+        <div class="post-meta">
+          <div class="post-avatar">EL</div>
+          <span>Eli L.</span>
+          <span class="dot">·</span>
+          <span>1 week ago</span>
+        </div>
+      </div>
+    </a>
+
+    <a class="post-card medium" href="#">
+      <div class="post-img court-art art-4"></div>
+      <div class="post-body">
+        <span class="post-tag">Gear</span>
+        <h3 class="post-title">New paddle rentals — premium blades available</h3>
+        <p class="post-excerpt">Butterfly Timo Boll ALC and Stiga Infinity now in stock at the front desk.</p>
+        <div class="post-meta">
+          <div class="post-avatar">AJ</div>
+          <span>Anna J.</span>
+          <span class="dot">·</span>
+          <span>10 days ago</span>
+        </div>
+      </div>
+    </a>
+
+    <a class="post-card medium" href="#">
+      <div class="post-img court-art art-5"></div>
+      <div class="post-body">
+        <span class="post-tag">Garden</span>
+        <h3 class="post-title">The terrace is open — play outside this summer</h3>
+        <p class="post-excerpt">Our outdoor court is back in action. Book court 6 for open-air rallies until late September.</p>
+        <div class="post-meta">
+          <div class="post-avatar">FT</div>
+          <span>Fabian T.</span>
+          <span class="dot">·</span>
+          <span>2 weeks ago</span>
+        </div>
+      </div>
+    </a>
+
+  </div>
+</section>
+
+<!-- ── UPCOMING EVENTS ── -->
+<div class="events-section">
+  <div class="events-inner">
+    <p class="section-eyebrow">Don't miss out</p>
+    <h2 class="section-title">Upcoming events</h2>
+
+    <div class="events-list">
+      <a class="event-row" href="#">
+        <div class="event-date"><span class="event-date-d">12</span><span class="event-date-m">Jul</span></div>
+        <div class="event-info">
+          <div class="event-name">Summer Open 2025 — Qualifier Round</div>
+          <div class="event-detail">Courts 1–4 · 10:00 – 18:00 · All levels</div>
+        </div>
+        <span class="event-badge badge-open">Open</span>
+        <span class="event-row-arrow">›</span>
+      </a>
+      <a class="event-row" href="#">
+        <div class="event-date"><span class="event-date-d">15</span><span class="event-date-m">Jul</span></div>
+        <div class="event-info">
+          <div class="event-name">Beginner Night — Free coaching session</div>
+          <div class="event-detail">Court 3 · 19:00 – 21:00 · No experience needed</div>
+        </div>
+        <span class="event-badge badge-free">Free</span>
+        <span class="event-row-arrow">›</span>
+      </a>
+      <a class="event-row" href="#">
+        <div class="event-date"><span class="event-date-d">19</span><span class="event-date-m">Jul</span></div>
+        <div class="event-info">
+          <div class="event-name">Members' League — Round 4</div>
+          <div class="event-detail">Courts 1–6 · 14:00 – 20:00 · Members only</div>
+        </div>
+        <span class="event-badge badge-limited">3 spots left</span>
+        <span class="event-row-arrow">›</span>
+      </a>
+      <a class="event-row" href="#">
+        <div class="event-date"><span class="event-date-d">26</span><span class="event-date-m">Jul</span></div>
+        <div class="event-info">
+          <div class="event-name">Summer Open 2025 — Finals Day</div>
+          <div class="event-detail">Main Hall · All day · Spectators welcome</div>
+        </div>
+        <span class="event-badge badge-open">Open</span>
+        <span class="event-row-arrow">›</span>
+      </a>
+      <a class="event-row" href="#">
+        <div class="event-date"><span class="event-date-d">02</span><span class="event-date-m">Aug</span></div>
+        <div class="event-info">
+          <div class="event-name">Garden Night — Open play under the stars</div>
+          <div class="event-detail">Outdoor Court 6 · 20:00 – 23:00 · Casual</div>
+        </div>
+        <span class="event-badge badge-open">Open</span>
+        <span class="event-row-arrow">›</span>
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- ── FOOTER ── -->
+<footer>
+  <div class="logo">
+    <div class="logo-box">
+      <span class="l1">PING.</span>
+      <span class="l2">PONG</span>
+      <span class="l3">GARDEN</span>
+    </div>
+  </div>
+  <span class="footer-copy">© 2025 Ping Pong Garden Berlin</span>
+  <ul class="footer-links">
+    <li><a href="#">About</a></li>
+    <li><a href="#">Rules</a></li>
+    <li><a href="#">Contact</a></li>
+    <li><a href="court-booking.html">Bookings</a></li>
+  </ul>
+</footer>
+
+</body>
+</html>
