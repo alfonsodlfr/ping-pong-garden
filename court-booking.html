@@ -134,15 +134,24 @@
       gap: 20px;
       max-width: 1200px;
       width: 100%;
-      margin: 0 auto 12px;
+      margin: 0 auto;
       font-size: 12px;
       color: var(--muted);
+      overflow-x: auto;
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
+      flex-wrap: nowrap;
+      flex-shrink: 0;
+      padding-bottom: 2px;
     }
+    .legend::-webkit-scrollbar { display: none; }
 
     .legend-item {
       display: flex;
       align-items: center;
       gap: 6px;
+      white-space: nowrap;
+      flex-shrink: 0;
     }
 
     .legend-dot {
@@ -1130,6 +1139,13 @@
   <div class="date-strip-wrap">
     <div class="date-strip" id="dateStrip"></div>
   </div>
+</div>
+
+<div class="page-body">
+  <div class="calendar-wrap" id="calendarWrap">
+    <div class="col-headers" id="colHeaders"></div>
+    <div class="calendar-body" id="calendarBody"></div>
+  </div>
 
   <div class="legend">
     <div class="legend-item">
@@ -1148,7 +1164,7 @@
       <div class="legend-dot" style="background:repeating-linear-gradient(135deg,transparent,transparent 4px,rgba(255,255,255,0.06) 4px,rgba(255,255,255,0.06) 8px);border:1px solid #2a2f3e"></div>
       <span data-i18n="bk.legend.unavail">Unavailable</span>
     </div>
-    <div style="width:1px;background:var(--border);margin:0 4px;"></div>
+    <div style="width:1px;background:var(--border);margin:0 4px;flex-shrink:0;"></div>
     <div class="legend-item">
       <div class="legend-dot" style="background:#22c55e22;border:1px solid #22c55e66"></div>
       <span data-i18n="bk.legend.offpeak">Off-peak €10/h</span>
@@ -1161,16 +1177,9 @@
       <div class="legend-dot" style="background:#ef444422;border:1px solid #ef444466"></div>
       <span data-i18n="bk.legend.peak">Peak €20/h</span>
     </div>
-    <div style="margin-left:auto;font-size:11px;color:var(--muted);background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:3px 10px;white-space:nowrap;">
+    <div style="margin-left:auto;flex-shrink:0;font-size:11px;color:var(--muted);background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:3px 10px;white-space:nowrap;">
       <span data-i18n="bk.hint.max">Max 2h per booking</span>
     </div>
-  </div>
-</div>
-
-<div class="page-body">
-  <div class="calendar-wrap" id="calendarWrap">
-    <div class="col-headers" id="colHeaders"></div>
-    <div class="calendar-body" id="calendarBody"></div>
   </div>
 
   <div class="sidebar">
@@ -1366,9 +1375,10 @@
 <script>
   // ─── Config ────────────────────────────────────────────────────────────────
   const COURTS = [
-    { id: 1, name: 'Court A', icon: '🎾' },
-    { id: 2, name: 'Court B', icon: '🏸' },
-    { id: 3, name: 'Court C', icon: '⚽' },
+    { id: 1, name: 'Table 1', icon: '🏓' },
+    { id: 2, name: 'Table 2', icon: '🏓' },
+    { id: 3, name: 'Table 3', icon: '🏓' },
+    { id: 4, name: 'Table 4', icon: '🏓' },
   ];
 
   // ─── Mock accounts DB ──────────────────────────────────────────────────────
@@ -1461,21 +1471,22 @@
          { start: 28, end: 32, type: 'other', label: 'Reserved' } ],
     2: [ { start: 22, end: 26, type: 'other', label: 'Reserved' } ],
     3: [],
+    4: [ { start: 20, end: 22, type: 'other', label: 'Reserved' } ],
   });
 
-  // allBookings[dateKey] = { courtId: [...] }
   const allBookings = {
     [dateKey(DATES[0])]: seedBookings(),
     [dateKey(DATES[1])]: {
       1: [ { start: 24, end: 26, type: 'other', label: 'Reserved' } ],
       2: [],
       3: [ { start: 30, end: 34, type: 'other', label: 'Reserved' } ],
+      4: [ { start: 22, end: 24, type: 'other', label: 'Reserved' } ],
     },
   };
 
   function getBookings(date) {
     const k = dateKey(date);
-    if (!allBookings[k]) allBookings[k] = { 1: [], 2: [], 3: [] };
+    if (!allBookings[k]) allBookings[k] = { 1: [], 2: [], 3: [], 4: [] };
     return allBookings[k];
   }
 
