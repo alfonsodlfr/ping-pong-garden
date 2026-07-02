@@ -1053,6 +1053,59 @@
     }
 
     .toast.show { transform: translateX(-50%) translateY(0); }
+
+    /* ── LANGUAGE SELECTOR ── */
+    .lang-selector { position: relative; }
+
+    .lang-toggle {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 5px 11px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--muted);
+      cursor: pointer;
+      letter-spacing: 0.5px;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .lang-toggle:hover { border-color: var(--text); color: var(--text); }
+
+    .lang-dropdown {
+      display: none;
+      position: absolute;
+      top: calc(100% + 8px);
+      right: 0;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+      overflow: hidden;
+      min-width: 140px;
+      z-index: 200;
+    }
+    .lang-dropdown.open { display: block; }
+
+    .lang-option {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      padding: 10px 14px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      text-align: left;
+      transition: background 0.1s;
+    }
+    .lang-option:hover  { background: var(--surface); }
+    .lang-option.active { background: rgba(108,99,255,0.12); }
+
+    .lang-code { font-size: 12px; font-weight: 800; color: var(--text); width: 22px; }
+    .lang-name { font-size: 13px; color: var(--muted); }
   </style>
 </head>
 <body>
@@ -1066,9 +1119,10 @@
     </div>
   </a>
   <ul class="nav-links">
-    <li><a href="index.html">Home</a></li>
-    <li><a href="court-booking.html" class="book-btn active">Bookings</a></li>
+    <li><a href="index.html" data-i18n="nav.home">Home</a></li>
+    <li><a href="court-booking.html" class="book-btn active" data-i18n="nav.bookings">Bookings</a></li>
   </ul>
+  <div class="nav-lang-slot"></div>
 </nav>
 
 <div class="page-top">
@@ -1080,35 +1134,35 @@
   <div class="legend">
     <div class="legend-item">
       <div class="legend-dot" style="background:rgba(108,99,255,0.35);border:1px solid #6c63ff"></div>
-      Available (drag to select)
+      <span data-i18n="bk.legend.available">Available (drag to select)</span>
     </div>
     <div class="legend-item">
       <div class="legend-dot" style="background:rgba(34,197,94,0.25);border:1px solid #22c55e"></div>
-      Your booking
+      <span data-i18n="bk.legend.yours">Your booking</span>
     </div>
     <div class="legend-item">
       <div class="legend-dot" style="background:rgba(239,68,68,0.2);border:1px solid #ef4444"></div>
-      Booked
+      <span data-i18n="bk.legend.booked">Booked</span>
     </div>
     <div class="legend-item">
       <div class="legend-dot" style="background:repeating-linear-gradient(135deg,transparent,transparent 4px,rgba(255,255,255,0.06) 4px,rgba(255,255,255,0.06) 8px);border:1px solid #2a2f3e"></div>
-      Unavailable
+      <span data-i18n="bk.legend.unavail">Unavailable</span>
     </div>
     <div style="width:1px;background:var(--border);margin:0 4px;"></div>
     <div class="legend-item">
       <div class="legend-dot" style="background:#22c55e22;border:1px solid #22c55e66"></div>
-      Off-peak €10/h
+      <span data-i18n="bk.legend.offpeak">Off-peak €10/h</span>
     </div>
     <div class="legend-item">
       <div class="legend-dot" style="background:#f59e0b22;border:1px solid #f59e0b66"></div>
-      Standard €15/h
+      <span data-i18n="bk.legend.standard">Standard €15/h</span>
     </div>
     <div class="legend-item">
       <div class="legend-dot" style="background:#ef444422;border:1px solid #ef444466"></div>
-      Peak €20/h
+      <span data-i18n="bk.legend.peak">Peak €20/h</span>
     </div>
     <div style="margin-left:auto;font-size:11px;color:var(--muted);background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:3px 10px;white-space:nowrap;">
-      Max 2h per booking
+      <span data-i18n="bk.hint.max">Max 2h per booking</span>
     </div>
   </div>
 </div>
@@ -1120,9 +1174,9 @@
   </div>
 
   <div class="sidebar">
-    <h3>My Bookings</h3>
+    <h3 data-i18n="bk.sidebar.title">My Bookings</h3>
     <div class="my-bookings-list" id="myBookingsList">
-      <span class="empty-state">No bookings yet — drag a time slot to get started.</span>
+      <span class="empty-state" data-i18n="bk.sidebar.empty">No bookings yet — drag a time slot to get started.</span>
     </div>
   </div>
 </div>
@@ -1135,64 +1189,66 @@
     <div class="step-indicator" id="stepIndicator">
       <div class="step-item active" data-step="1">
         <div class="step-dot">1</div>
-        <span>Review</span>
+        <span data-i18n="step.review">Review</span>
       </div>
       <div class="step-line"></div>
       <div class="step-item" data-step="2">
         <div class="step-dot">2</div>
-        <span>Payment</span>
+        <span data-i18n="step.payment">Payment</span>
       </div>
       <div class="step-line"></div>
       <div class="step-item" data-step="3">
         <div class="step-dot">3</div>
-        <span>Confirm</span>
+        <span data-i18n="step.confirm">Confirm</span>
       </div>
     </div>
 
     <!-- ══ STEP 1 — Review ══ -->
     <div class="modal-step" id="step1">
-      <h2>Review booking</h2>
-      <p class="subtitle">Check the details, then add your players.</p>
+      <h2 data-i18n="modal.s1.title">Review booking</h2>
+      <p class="subtitle" data-i18n="modal.s1.subtitle">Check the details, then add your players.</p>
 
       <div class="summary-card">
         <div class="summary-row">
-          <span class="summary-label">Court</span>
+          <span class="summary-label" data-i18n="modal.s1.court">Court</span>
           <span id="mCourt" class="summary-value"></span>
         </div>
         <div class="summary-row">
-          <span class="summary-label">Date</span>
+          <span class="summary-label" data-i18n="modal.s1.date">Date</span>
           <span id="mDate" class="summary-value"></span>
         </div>
         <div class="summary-row">
-          <span class="summary-label">Time</span>
+          <span class="summary-label" data-i18n="modal.s1.time">Time</span>
           <span id="mTime" class="summary-value"></span>
         </div>
         <div class="summary-row">
-          <span class="summary-label">Duration</span>
+          <span class="summary-label" data-i18n="modal.s1.duration">Duration</span>
           <span id="mDuration" class="summary-value"></span>
         </div>
         <div class="summary-divider"></div>
         <div class="summary-row">
-          <span class="summary-label">Total</span>
+          <span class="summary-label" data-i18n="modal.s1.total">Total</span>
           <span id="mPrice" class="summary-value summary-total"></span>
         </div>
         <div id="mPriceBreakdown"></div>
       </div>
 
-      <!-- Players section -->
       <div class="player-section">
-        <div class="player-section-label">Add players <span class="optional-tag">optional</span></div>
+        <div class="player-section-label">
+          <span data-i18n="modal.s1.players">Add players</span>
+          <span class="optional-tag" data-i18n="modal.s1.optional">optional</span>
+        </div>
         <div class="player-input-row">
-          <input class="player-input" id="playerInput" type="text" placeholder="Search by name…" autocomplete="off" />
-          <button class="player-add-btn" id="playerAddBtn">Add</button>
+          <input class="player-input" id="playerInput" type="text" data-i18n-placeholder="modal.s1.search" placeholder="Search by name…" autocomplete="off" />
+          <button class="player-add-btn" id="playerAddBtn" data-i18n="modal.s1.add">Add</button>
         </div>
         <div class="player-suggestions" id="playerSuggestions"></div>
         <div class="players-added" id="playersAdded"></div>
       </div>
 
       <div class="modal-actions">
-        <button class="btn btn-cancel" id="step1Cancel">Cancel</button>
-        <button class="btn btn-confirm" id="step1Next">Continue to payment</button>
+        <button class="btn btn-cancel" id="step1Cancel" data-i18n="modal.s1.cancel">Cancel</button>
+        <button class="btn btn-confirm" id="step1Next" data-i18n="modal.s1.next">Continue to payment</button>
       </div>
     </div>
 
@@ -1202,7 +1258,7 @@
       <p class="subtitle">Choose how you'd like to pay.</p>
 
       <!-- Saved cards -->
-      <div class="pay-section-label">Saved cards</div>
+      <div class="pay-section-label" data-i18n="modal.s2.saved">Saved cards</div>
       <div class="saved-cards" id="savedCards">
         <label class="card-option">
           <input type="radio" name="payMethod" value="visa4242" checked />
@@ -1235,7 +1291,7 @@
           <div class="card-option-body">
             <div class="card-chip new-card-icon">＋</div>
             <div class="card-info">
-              <span class="card-name">New card</span>
+              <span class="card-name" data-i18n="modal.s2.newcard">New card</span>
             </div>
             <div class="card-radio-mark"></div>
           </div>
@@ -1245,26 +1301,26 @@
       <!-- New card form (shown when "New card" selected) -->
       <div class="new-card-form hidden" id="newCardForm">
         <div class="field-group">
-          <label class="field-label">Card number</label>
+          <label class="field-label" data-i18n="modal.s2.cardnum">Card number</label>
           <input class="pay-input" id="cardNumber" type="text" placeholder="1234 5678 9012 3456" maxlength="19" inputmode="numeric" />
         </div>
         <div class="field-row">
           <div class="field-group">
-            <label class="field-label">Expiry</label>
+            <label class="field-label" data-i18n="modal.s2.expiry">Expiry</label>
             <input class="pay-input" id="cardExpiry" type="text" placeholder="MM / YY" maxlength="7" inputmode="numeric" />
           </div>
           <div class="field-group">
-            <label class="field-label">CVC</label>
+            <label class="field-label" data-i18n="modal.s2.cvc">CVC</label>
             <input class="pay-input" id="cardCvc" type="text" placeholder="123" maxlength="4" inputmode="numeric" />
           </div>
         </div>
         <div class="field-group">
-          <label class="field-label">Name on card</label>
+          <label class="field-label" data-i18n="modal.s2.name">Name on card</label>
           <input class="pay-input" id="cardName" type="text" placeholder="Full name" />
         </div>
         <label class="save-card-toggle">
           <input type="checkbox" id="saveCard" checked />
-          <span>Save card for future bookings</span>
+          <span data-i18n="modal.s2.save">Save card for future bookings</span>
         </label>
       </div>
 
@@ -1275,13 +1331,13 @@
       </div>
 
       <div class="modal-actions" style="margin-top:16px;">
-        <button class="btn btn-cancel" id="step2Back">← Back</button>
-        <button class="btn btn-confirm" id="step2Pay">Pay <span id="step2PayAmount"></span></button>
+        <button class="btn btn-cancel" id="step2Back" data-i18n="modal.s2.back">← Back</button>
+        <button class="btn btn-confirm" id="step2Pay"><span data-i18n="modal.s2.pay">Pay</span> <span id="step2PayAmount"></span></button>
       </div>
 
       <div class="pay-secure-note">
         <svg width="12" height="14" viewBox="0 0 12 14" fill="none"><path d="M6 1L1 3v4c0 3 2.5 5.2 5 6 2.5-.8 5-3 5-6V3L6 1z" stroke="#64748b" stroke-width="1.2" fill="none"/></svg>
-        Payments are encrypted and secure
+        <span data-i18n="modal.s2.secure">Payments are encrypted and secure</span>
       </div>
     </div>
 
@@ -1294,10 +1350,10 @@
             <path class="success-check" d="M14 26L22 34L38 18" stroke="#22c55e" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
         </div>
-        <h2 class="success-title">You're booked!</h2>
+        <h2 class="success-title" data-i18n="modal.s3.title">You're booked!</h2>
         <p class="success-sub" id="successSub"></p>
         <div class="success-details" id="successDetails"></div>
-        <button class="btn btn-confirm" id="step3Done" style="margin-top:24px;width:100%;">Done</button>
+        <button class="btn btn-confirm" id="step3Done" data-i18n="modal.s3.done" style="margin-top:24px;width:100%;">Done</button>
       </div>
     </div>
 
@@ -1549,7 +1605,7 @@
           <div class="suggestion-name">${u.name}</div>
           <div class="suggestion-handle">${u.handle}</div>
         </div>
-        <span class="suggestion-badge badge-member">Member</span>
+        <span class="suggestion-badge badge-member">${window.i18n.t('player.member')}</span>
       </div>`).join('');
 
     // Always show "add as guest" for the raw query if not already a guest with same name
@@ -1561,9 +1617,9 @@
           <div class="suggestion-avatar" style="background:#64748b20;color:#94a3b8">${playerInitials(query)}</div>
           <div>
             <div class="suggestion-name">${query.trim()}</div>
-            <div class="suggestion-handle">Not a member</div>
+            <div class="suggestion-handle">${window.i18n.t('player.notmember')}</div>
           </div>
-          <span class="suggestion-badge badge-guest">Guest</span>
+          <span class="suggestion-badge badge-guest">${window.i18n.t('player.guest')}</span>
         </div>`;
     }
 
@@ -1592,7 +1648,7 @@
         <div class="pt-avatar" style="background:${p.color}20;color:${p.color}">${p.initials}</div>
         <span class="pt-name">${p.name}</span>
         ${p.handle ? `<span style="font-size:11px;color:var(--muted)">${p.handle}</span>` : ''}
-        <span class="pt-type ${p.type}">${p.type === 'member' ? 'Member' : 'Guest'}</span>
+        <span class="pt-type ${p.type}">${p.type === 'member' ? window.i18n.t('player.member') : window.i18n.t('player.guest')}</span>
         <button class="pt-remove" data-idx="${i}" title="Remove">×</button>
       </div>`).join('');
 
@@ -1846,19 +1902,19 @@
 
       if (lo < OPEN_SLOT || hi > CLOSE_SLOT + 1) {
         if (drag.preview) { drag.preview.remove(); drag.preview = null; }
-        showToast('Courts are only available 7:00 AM – 11:00 PM');
+        showToast(window.i18n.t('toast.hours'));
         return;
       }
 
       if (hasConflict(drag.courtId, lo, hi)) {
         if (drag.preview) { drag.preview.remove(); drag.preview = null; }
-        showToast('That slot overlaps an existing booking');
+        showToast(window.i18n.t('toast.conflict'));
         return;
       }
 
       if (wouldLeaveGap(drag.courtId, lo, hi)) {
         if (drag.preview) { drag.preview.remove(); drag.preview = null; }
-        showToast('This would leave a 30-min gap — extend or shrink your booking to avoid it');
+        showToast(window.i18n.t('toast.gap'));
         return;
       }
 
@@ -2095,7 +2151,7 @@
     // Simulate processing
     const btn = document.getElementById('step2Pay');
     btn.disabled = true;
-    btn.textContent = 'Processing…';
+    btn.textContent = window.i18n.t('modal.s2.processing');
 
     setTimeout(() => {
       btn.disabled = false;
@@ -2117,19 +2173,18 @@
     const dateStr = selectedDate.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
     const cost    = calcCost(pendingBooking.start, pendingBooking.end).total;
 
-    document.getElementById('successSub').textContent =
-      `Your court is reserved. See you on the court!`;
+    document.getElementById('successSub').textContent = window.i18n.t('modal.s3.sub');
 
     const rows = [
-      ['Court',    `${court.icon} ${court.name}`],
-      ['Date',     dateStr],
-      ['Time',     `${slotToTime(pendingBooking.start)} – ${slotToTime(pendingBooking.end)}`],
-      ['Duration', formatDuration(pendingBooking.end - pendingBooking.start)],
-      ['Paid',     formatEur(cost)],
+      [window.i18n.t('detail.court'),    `${court.icon} ${court.name}`],
+      [window.i18n.t('detail.date'),     dateStr],
+      [window.i18n.t('detail.time'),     `${slotToTime(pendingBooking.start)} – ${slotToTime(pendingBooking.end)}`],
+      [window.i18n.t('detail.duration'), formatDuration(pendingBooking.end - pendingBooking.start)],
+      [window.i18n.t('detail.paid'),     formatEur(cost)],
     ];
 
     if (pendingPlayers.length > 0) {
-      rows.push(['Players', pendingPlayers.map(p => p.name).join(', ')]);
+      rows.push([window.i18n.t('detail.players'), pendingPlayers.map(p => p.name).join(', ')]);
     }
 
     document.getElementById('successDetails').innerHTML = rows.map(([l, v]) => `
@@ -2161,7 +2216,7 @@
     document.getElementById('modalBackdrop').classList.remove('open');
     pendingBooking = null;
     resetPlayerUI();
-    showToast('Booking confirmed!');
+    showToast(window.i18n.t('toast.confirmed'));
   });
 
   // ─── My bookings panel ─────────────────────────────────────────────────────
@@ -2233,6 +2288,12 @@
   buildGrid();
   wirePlayerSearch();
 
+  // Re-render on language change (re-renders empty state, dynamic grid labels)
+  document.addEventListener('langchange', () => {
+    renderMyBookings();
+    renderAllBlocks();
+  });
+
   // Re-render blocks on resize (columns change width)
   window.addEventListener('resize', () => renderAllBlocks());
 
@@ -2243,5 +2304,6 @@
     body.scrollTop = OPEN_SLOT * slotH - 20;
   });
 </script>
+<script src="i18n.js"></script>
 </body>
 </html>

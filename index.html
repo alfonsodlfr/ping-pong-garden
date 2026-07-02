@@ -641,6 +641,59 @@
 
     .footer-links a:hover { color: rgba(255,255,255,0.7); }
 
+    /* ── LANGUAGE SELECTOR ── */
+    .lang-selector { position: relative; }
+
+    .lang-toggle {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 6px 12px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--muted);
+      cursor: pointer;
+      letter-spacing: 0.5px;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .lang-toggle:hover { border-color: var(--text); color: var(--text); }
+
+    .lang-dropdown {
+      display: none;
+      position: absolute;
+      top: calc(100% + 8px);
+      right: 0;
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.10);
+      overflow: hidden;
+      min-width: 140px;
+      z-index: 200;
+    }
+    .lang-dropdown.open { display: block; }
+
+    .lang-option {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      padding: 10px 14px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      text-align: left;
+      transition: background 0.1s;
+    }
+    .lang-option:hover  { background: var(--gray); }
+    .lang-option.active { background: #f0f4ff; }
+
+    .lang-code { font-size: 12px; font-weight: 800; color: var(--text); width: 22px; }
+    .lang-name { font-size: 13px; color: var(--muted); }
+
     /* ── MOBILE ── */
     @media (max-width: 680px) {
 
@@ -809,9 +862,10 @@
     </div>
   </a>
   <ul class="nav-links">
-    <li><a href="index.html" class="active">Home</a></li>
-    <li><a href="court-booking.html" class="book-btn">Bookings</a></li>
+    <li><a href="index.html" class="active" data-i18n="nav.home">Home</a></li>
+    <li><a href="court-booking.html" class="book-btn" data-i18n="nav.bookings">Bookings</a></li>
   </ul>
+  <div class="nav-lang-slot"></div>
 </nav>
 
 <!-- ── HERO ── -->
@@ -833,15 +887,19 @@
   </svg>
 
   <div class="hero-content">
-    <p class="hero-eyebrow">Berlin's finest table tennis club</p>
-    <h1 class="hero-title">Play.<br><em>Connect.</em><br>Rally.</h1>
-    <p class="hero-desc">
+    <p class="hero-eyebrow" data-i18n="hero.eyebrow">Berlin's finest table tennis club</p>
+    <h1 class="hero-title">
+      <span data-i18n="hero.title.1">Play.</span><br>
+      <em data-i18n="hero.title.2">Connect.</em><br>
+      <span data-i18n="hero.title.3">Rally.</span>
+    </h1>
+    <p class="hero-desc" data-i18n="hero.desc">
       Six professional courts, an open community, and a garden terrace.
       Drop in any time or book your court in seconds.
     </p>
     <div class="hero-actions">
-      <a href="court-booking.html" class="btn-primary">Book a court</a>
-      <a href="#feed" class="btn-ghost">What's on</a>
+      <a href="court-booking.html" class="btn-primary" data-i18n="hero.cta.book">Book a court</a>
+      <a href="#feed" class="btn-ghost" data-i18n="hero.cta.on">What's on</a>
     </div>
   </div>
 
@@ -856,36 +914,35 @@
 <div class="stats-bar">
   <div class="stat">
     <span class="stat-num">6</span>
-    <span class="stat-label">Courts</span>
+    <span class="stat-label" data-i18n="stats.courts">Courts</span>
   </div>
   <div class="stat">
     <span class="stat-num">7AM–11PM</span>
-    <span class="stat-label">Open daily</span>
+    <span class="stat-label" data-i18n="stats.open">Open daily</span>
   </div>
   <div class="stat">
     <span class="stat-num">1,200+</span>
-    <span class="stat-label">Members</span>
+    <span class="stat-label" data-i18n="stats.members">Members</span>
   </div>
   <div class="stat">
     <span class="stat-num">€10</span>
-    <span class="stat-label">From per hour</span>
+    <span class="stat-label" data-i18n="stats.from">From per hour</span>
   </div>
 </div>
 
 <!-- ── POST FEED ── -->
 <section id="feed">
-  <p class="section-eyebrow">Latest from the garden</p>
-  <h2 class="section-title">News & Stories</h2>
+  <p class="section-eyebrow" data-i18n="feed.eyebrow">Latest from the garden</p>
+  <h2 class="section-title" data-i18n="feed.title">News & Stories</h2>
 
   <div class="feed-grid">
 
-    <!-- Featured -->
     <a class="post-card featured" href="#">
       <div class="post-img court-art art-1"></div>
       <div class="post-body">
-        <span class="post-tag">Tournament</span>
-        <h3 class="post-title">Summer Open 2025 — Registration now live</h3>
-        <p class="post-excerpt">Our biggest event of the year returns. 64-player bracket, prize pool, and a cold beer for every participant. Sign up before spots are gone.</p>
+        <span class="post-tag" data-i18n="post1.tag">Tournament</span>
+        <h3 class="post-title" data-i18n="post1.title">Summer Open 2025 — Registration now live</h3>
+        <p class="post-excerpt" data-i18n="post1.excerpt">Our biggest event of the year returns. 64-player bracket, prize pool, and a cold beer for every participant. Sign up before spots are gone.</p>
         <div class="post-meta">
           <div class="post-avatar">MK</div>
           <span>Marco K.</span>
@@ -895,13 +952,12 @@
       </div>
     </a>
 
-    <!-- Tall side card -->
     <a class="post-card tall" href="#">
       <div class="post-img court-art art-2"></div>
       <div class="post-body">
-        <span class="post-tag">Announcement</span>
-        <h3 class="post-title">Court 5 & 6 now open after renovation</h3>
-        <p class="post-excerpt">New Stiga tables, fresh lighting, and spring-loaded floors. Come try them out this weekend.</p>
+        <span class="post-tag" data-i18n="post2.tag">Announcement</span>
+        <h3 class="post-title" data-i18n="post2.title">Court 5 & 6 now open after renovation</h3>
+        <p class="post-excerpt" data-i18n="post2.excerpt">New Stiga tables, fresh lighting, and spring-loaded floors. Come try them out this weekend.</p>
         <div class="post-meta">
           <div class="post-avatar">SL</div>
           <span>Sara L.</span>
@@ -911,13 +967,12 @@
       </div>
     </a>
 
-    <!-- Row 2 -->
     <a class="post-card medium" href="#">
       <div class="post-img court-art art-3"></div>
       <div class="post-body">
-        <span class="post-tag">Community</span>
-        <h3 class="post-title">Tuesday beginner nights are back</h3>
-        <p class="post-excerpt">Free coaching every Tuesday from 19:00. All levels welcome — just show up.</p>
+        <span class="post-tag" data-i18n="post3.tag">Community</span>
+        <h3 class="post-title" data-i18n="post3.title">Tuesday beginner nights are back</h3>
+        <p class="post-excerpt" data-i18n="post3.excerpt">Free coaching every Tuesday from 19:00. All levels welcome — just show up.</p>
         <div class="post-meta">
           <div class="post-avatar">EL</div>
           <span>Eli L.</span>
@@ -930,9 +985,9 @@
     <a class="post-card medium" href="#">
       <div class="post-img court-art art-4"></div>
       <div class="post-body">
-        <span class="post-tag">Gear</span>
-        <h3 class="post-title">New paddle rentals — premium blades available</h3>
-        <p class="post-excerpt">Butterfly Timo Boll ALC and Stiga Infinity now in stock at the front desk.</p>
+        <span class="post-tag" data-i18n="post4.tag">Gear</span>
+        <h3 class="post-title" data-i18n="post4.title">New paddle rentals — premium blades available</h3>
+        <p class="post-excerpt" data-i18n="post4.excerpt">Butterfly Timo Boll ALC and Stiga Infinity now in stock at the front desk.</p>
         <div class="post-meta">
           <div class="post-avatar">AJ</div>
           <span>Anna J.</span>
@@ -945,9 +1000,9 @@
     <a class="post-card medium" href="#">
       <div class="post-img court-art art-5"></div>
       <div class="post-body">
-        <span class="post-tag">Garden</span>
-        <h3 class="post-title">The terrace is open — play outside this summer</h3>
-        <p class="post-excerpt">Our outdoor court is back in action. Book court 6 for open-air rallies until late September.</p>
+        <span class="post-tag" data-i18n="post5.tag">Garden</span>
+        <h3 class="post-title" data-i18n="post5.title">The terrace is open — play outside this summer</h3>
+        <p class="post-excerpt" data-i18n="post5.excerpt">Our outdoor court is back in action. Book court 6 for open-air rallies until late September.</p>
         <div class="post-meta">
           <div class="post-avatar">FT</div>
           <span>Fabian T.</span>
@@ -963,53 +1018,53 @@
 <!-- ── UPCOMING EVENTS ── -->
 <div class="events-section">
   <div class="events-inner">
-    <p class="section-eyebrow">Don't miss out</p>
-    <h2 class="section-title">Upcoming events</h2>
+    <p class="section-eyebrow" data-i18n="events.eyebrow">Don't miss out</p>
+    <h2 class="section-title" data-i18n="events.title">Upcoming events</h2>
 
     <div class="events-list">
       <a class="event-row" href="#">
         <div class="event-date"><span class="event-date-d">12</span><span class="event-date-m">Jul</span></div>
         <div class="event-info">
-          <div class="event-name">Summer Open 2025 — Qualifier Round</div>
-          <div class="event-detail">Courts 1–4 · 10:00 – 18:00 · All levels</div>
+          <div class="event-name" data-i18n="event1.name">Summer Open 2025 — Qualifier Round</div>
+          <div class="event-detail" data-i18n="event1.detail">Courts 1–4 · 10:00 – 18:00 · All levels</div>
         </div>
-        <span class="event-badge badge-open">Open</span>
+        <span class="event-badge badge-open" data-i18n="event1.badge">Open</span>
         <span class="event-row-arrow">›</span>
       </a>
       <a class="event-row" href="#">
         <div class="event-date"><span class="event-date-d">15</span><span class="event-date-m">Jul</span></div>
         <div class="event-info">
-          <div class="event-name">Beginner Night — Free coaching session</div>
-          <div class="event-detail">Court 3 · 19:00 – 21:00 · No experience needed</div>
+          <div class="event-name" data-i18n="event2.name">Beginner Night — Free coaching session</div>
+          <div class="event-detail" data-i18n="event2.detail">Court 3 · 19:00 – 21:00 · No experience needed</div>
         </div>
-        <span class="event-badge badge-free">Free</span>
+        <span class="event-badge badge-free" data-i18n="event2.badge">Free</span>
         <span class="event-row-arrow">›</span>
       </a>
       <a class="event-row" href="#">
         <div class="event-date"><span class="event-date-d">19</span><span class="event-date-m">Jul</span></div>
         <div class="event-info">
-          <div class="event-name">Members' League — Round 4</div>
-          <div class="event-detail">Courts 1–6 · 14:00 – 20:00 · Members only</div>
+          <div class="event-name" data-i18n="event3.name">Members' League — Round 4</div>
+          <div class="event-detail" data-i18n="event3.detail">Courts 1–6 · 14:00 – 20:00 · Members only</div>
         </div>
-        <span class="event-badge badge-limited">3 spots left</span>
+        <span class="event-badge badge-limited" data-i18n="event3.badge">3 spots left</span>
         <span class="event-row-arrow">›</span>
       </a>
       <a class="event-row" href="#">
         <div class="event-date"><span class="event-date-d">26</span><span class="event-date-m">Jul</span></div>
         <div class="event-info">
-          <div class="event-name">Summer Open 2025 — Finals Day</div>
-          <div class="event-detail">Main Hall · All day · Spectators welcome</div>
+          <div class="event-name" data-i18n="event4.name">Summer Open 2025 — Finals Day</div>
+          <div class="event-detail" data-i18n="event4.detail">Main Hall · All day · Spectators welcome</div>
         </div>
-        <span class="event-badge badge-open">Open</span>
+        <span class="event-badge badge-open" data-i18n="event4.badge">Open</span>
         <span class="event-row-arrow">›</span>
       </a>
       <a class="event-row" href="#">
         <div class="event-date"><span class="event-date-d">02</span><span class="event-date-m">Aug</span></div>
         <div class="event-info">
-          <div class="event-name">Garden Night — Open play under the stars</div>
-          <div class="event-detail">Outdoor Court 6 · 20:00 – 23:00 · Casual</div>
+          <div class="event-name" data-i18n="event5.name">Garden Night — Open play under the stars</div>
+          <div class="event-detail" data-i18n="event5.detail">Outdoor Court 6 · 20:00 – 23:00 · Casual</div>
         </div>
-        <span class="event-badge badge-open">Open</span>
+        <span class="event-badge badge-open" data-i18n="event5.badge">Open</span>
         <span class="event-row-arrow">›</span>
       </a>
     </div>
@@ -1025,14 +1080,14 @@
       <span class="l3">GARDEN</span>
     </div>
   </div>
-  <span class="footer-copy">© 2025 Ping Pong Garden Berlin</span>
+  <span class="footer-copy" data-i18n="footer.copy">© 2025 Ping Pong Garden Berlin</span>
   <ul class="footer-links">
-    <li><a href="#">About</a></li>
-    <li><a href="#">Rules</a></li>
-    <li><a href="#">Contact</a></li>
-    <li><a href="court-booking.html">Bookings</a></li>
+    <li><a href="#" data-i18n="footer.about">About</a></li>
+    <li><a href="#" data-i18n="footer.rules">Rules</a></li>
+    <li><a href="#" data-i18n="footer.contact">Contact</a></li>
+    <li><a href="court-booking.html" data-i18n="nav.bookings">Bookings</a></li>
   </ul>
 </footer>
 
-</body>
+<script src="i18n.js"></script>
 </html>
