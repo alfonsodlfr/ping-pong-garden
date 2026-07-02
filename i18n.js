@@ -182,7 +182,7 @@ const TRANSLATIONS = {
   'modal.s2.cvc':      { en: 'CVC',             de: 'CVC',               es: 'CVC',               it: 'CVC'              },
   'modal.s2.name':     { en: 'Name on card',    de: 'Name auf der Karte',es: 'Nombre en la tarjeta', it: 'Nome sulla carta' },
   'modal.s2.save':     { en: 'Save card for future bookings', de: 'Karte für zukünftige Buchungen speichern', es: 'Guardar tarjeta para futuras reservas', it: 'Salva carta per prenotazioni future' },
-  'modal.s2.back':     { en: '← Back',          de: '← Zurück',          es: '← Atrás',           it: '← Indietro'       },
+  'modal.s2.back':     { en: 'Back',          de: 'Zurück',          es: 'Atrás',           it: 'Indietro'       },
   'modal.s2.pay':      { en: 'Pay',             de: 'Zahlen',            es: 'Pagar',             it: 'Paga'             },
   'modal.s2.secure':   { en: 'Payments are encrypted and secure', de: 'Zahlungen sind verschlüsselt und sicher', es: 'Los pagos están cifrados y son seguros', it: 'I pagamenti sono crittografati e sicuri' },
   'modal.s2.processing': { en: 'Processing…',  de: 'Wird verarbeitet…', es: 'Procesando…',       it: 'Elaborazione…'    },
