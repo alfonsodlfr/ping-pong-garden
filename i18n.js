@@ -145,6 +145,7 @@ const TRANSLATIONS = {
   'footer.contact': { en: 'Contact', de: 'Kontakt',   es: 'Contacto',       it: 'Contatti'  },
 
   // ── BOOKING — LEGEND / HINTS ─────────────────────────────────────────────────
+  'bk.myBooking':   { en: 'My Booking', de: 'Meine Buchung', es: 'Mi reserva', it: 'La mia prenotazione' },
   'bk.legend.available': { en: 'Available (drag to select)', de: 'Verfügbar (ziehen zum Wählen)', es: 'Disponible (arrastrar para seleccionar)', it: 'Disponibile (trascina per selezionare)' },
   'bk.legend.yours':     { en: 'Your booking',  de: 'Deine Buchung',  es: 'Tu reserva',     it: 'La tua prenotazione' },
   'bk.legend.booked':    { en: 'Booked',         de: 'Gebucht',        es: 'Reservado',      it: 'Prenotato'           },
@@ -208,6 +209,17 @@ const TRANSLATIONS = {
   'player.member':    { en: 'Member',         de: 'Mitglied',          es: 'Miembro',           it: 'Membro'            },
   'player.guest':     { en: 'Guest',          de: 'Gast',              es: 'Invitado',          it: 'Ospite'            },
   'player.notmember': { en: 'Not a member',   de: 'Kein Mitglied',     es: 'No es miembro',     it: 'Non è membro'      },
+
+  // ── BOOKING — SLOT LOCKING ───────────────────────────────────────────────────
+  'lock.legend':    { en: 'Being booked',        de: 'Wird gebucht',          es: 'En proceso de reserva',  it: 'In prenotazione'         },
+  'lock.held':      { en: 'Held for you',         de: 'Für dich reserviert',   es: 'Reservado para ti',      it: 'Riservato per te'        },
+  'lock.countdown': { en: 'Time to complete payment', de: 'Zeit zum Bezahlen',  es: 'Tiempo para pagar',      it: 'Tempo per il pagamento'  },
+  'lock.expired.title': { en: 'Your slot has expired', de: 'Dein Slot ist abgelaufen', es: 'Tu turno ha expirado', it: 'Il tuo slot è scaduto' },
+  'lock.expired.sub':   { en: 'The 10-minute hold on this slot has ended. Please select a new time.',
+                           de: 'Die 10-Minuten-Reservierung dieses Slots ist abgelaufen. Bitte wähle eine neue Zeit.',
+                           es: 'La reserva de 10 minutos de este turno ha terminado. Por favor elige otro horario.',
+                           it: 'Il blocco di 10 minuti su questo slot è terminato. Seleziona un nuovo orario.' },
+  'lock.expired.btn':   { en: 'Choose another slot', de: 'Neuen Slot wählen', es: 'Elegir otro turno', it: 'Scegli un altro slot' },
 
   // ── BOOKING — TOAST MESSAGES ─────────────────────────────────────────────────
   'toast.hours':    { en: 'Courts are only available 7:00 AM – 11:00 PM', de: 'Platten sind nur von 7:00 bis 23:00 Uhr verfügbar', es: 'Las pistas solo están disponibles de 7:00 a 23:00', it: 'I campi sono disponibili solo dalle 7:00 alle 23:00' },

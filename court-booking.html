@@ -315,6 +315,82 @@
       color: #86efac;
     }
 
+    /* Slot locked by another user */
+    .booking-block.locked {
+      background: repeating-linear-gradient(
+        45deg,
+        rgba(245,158,11,0.08),
+        rgba(245,158,11,0.08) 4px,
+        transparent 4px,
+        transparent 10px
+      );
+      border: 1px dashed rgba(245,158,11,0.5);
+      color: #fcd34d;
+    }
+
+    /* Slot held by this user (in progress) */
+    .booking-block.held {
+      background: rgba(108,99,255,0.2);
+      border: 2px dashed var(--accent);
+      color: var(--accent2);
+      animation: heldPulse 2s ease-in-out infinite;
+    }
+
+    @keyframes heldPulse {
+      0%,100% { opacity: 1; }
+      50%      { opacity: 0.65; }
+    }
+
+    /* ── Countdown bar ── */
+    .lock-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(108,99,255,0.12);
+      border: 1px solid rgba(108,99,255,0.3);
+      border-radius: 8px;
+      padding: 9px 14px;
+      margin-bottom: 16px;
+      color: var(--accent2);
+      font-size: 13px;
+      transition: background 0.4s, border-color 0.4s, color 0.4s;
+    }
+
+    .lock-bar-warn {
+      background: rgba(245,158,11,0.12);
+      border-color: rgba(245,158,11,0.35);
+      color: #fcd34d;
+    }
+
+    .lock-bar-urgent {
+      background: rgba(239,68,68,0.14);
+      border-color: rgba(239,68,68,0.4);
+      color: #fca5a5;
+      animation: urgentFlash 0.8s ease-in-out infinite;
+    }
+
+    @keyframes urgentFlash {
+      0%,100% { opacity: 1; }
+      50%      { opacity: 0.6; }
+    }
+
+    .lock-bar-icon { flex-shrink: 0; display: flex; }
+    .lock-bar-label { flex: 1; font-weight: 500; }
+    .lock-bar-timer {
+      font-size: 16px;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.5px;
+      flex-shrink: 0;
+    }
+
+    /* Expired icon */
+    .expired-icon {
+      width: 72px;
+      height: 72px;
+      margin-bottom: 20px;
+    }
+
     .booking-block .bk-name { font-weight: 700; }
     .booking-block .bk-time { font-size: 10px; opacity: 0.8; margin-top: 1px; }
 
@@ -1263,8 +1339,21 @@
 
     <!-- ══ STEP 2 — Payment ══ -->
     <div class="modal-step hidden" id="step2">
-      <h2>Payment</h2>
-      <p class="subtitle">Choose how you'd like to pay.</p>
+      <h2 data-i18n="modal.s2.title">Payment</h2>
+      <p class="subtitle" data-i18n="modal.s2.subtitle">Choose how you'd like to pay.</p>
+
+      <!-- Lock countdown bar -->
+      <div class="lock-bar" id="lockBar">
+        <div class="lock-bar-icon">
+          <svg width="13" height="15" viewBox="0 0 13 15" fill="none">
+            <rect x="1.5" y="6" width="10" height="8.5" rx="2" stroke="currentColor" stroke-width="1.4"/>
+            <path d="M4 6V4a2.5 2.5 0 015 0v2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+            <circle cx="6.5" cy="10.5" r="1.2" fill="currentColor"/>
+          </svg>
+        </div>
+        <span class="lock-bar-label" data-i18n="lock.countdown">Time to complete payment</span>
+        <span class="lock-bar-timer" id="lockCountdown">10:00</span>
+      </div>
 
       <!-- Saved cards -->
       <div class="pay-section-label" data-i18n="modal.s2.saved">Saved cards</div>
@@ -1363,6 +1452,22 @@
         <p class="success-sub" id="successSub"></p>
         <div class="success-details" id="successDetails"></div>
         <button class="btn btn-confirm" id="step3Done" data-i18n="modal.s3.done" style="margin-top:24px;width:100%;">Done</button>
+      </div>
+    </div>
+
+    <!-- ══ EXPIRED ══ -->
+    <div class="modal-step hidden" id="stepExpired">
+      <div class="success-screen">
+        <div class="expired-icon">
+          <svg viewBox="0 0 52 52" fill="none">
+            <circle cx="26" cy="26" r="24" stroke="#ef4444" stroke-width="3"/>
+            <path d="M26 14v14" stroke="#ef4444" stroke-width="3" stroke-linecap="round"/>
+            <circle cx="26" cy="36" r="2" fill="#ef4444"/>
+          </svg>
+        </div>
+        <h2 class="success-title" style="color:var(--red)" data-i18n="lock.expired.title">Your slot has expired</h2>
+        <p class="success-sub" data-i18n="lock.expired.sub">The 10-minute hold on this slot has ended. Please select a new time.</p>
+        <button class="btn btn-confirm" id="expiredClose" data-i18n="lock.expired.btn" style="margin-top:24px;width:100%;">Choose another slot</button>
       </div>
     </div>
 
@@ -1522,16 +1627,62 @@
 
   // Check if a range [start, end) overlaps any existing booking for a court on the selected date
   function hasConflict(courtId, start, end) {
-    const bks = getBookings(selectedDate)[courtId] || [];
+    const bks     = getBookings(selectedDate)[courtId] || [];
     const userBks = getUserBookings(selectedDate).filter(b => b.courtId === courtId);
-    return [...bks, ...userBks].some(b => start < b.end && end > b.start);
+    // Also treat active locks (by other users) as conflicts
+    const lockBks = getActiveLocks(dateKey(selectedDate), courtId, activeLockId);
+    return [...bks, ...userBks, ...lockBks].some(b => start < b.end && end > b.start);
   }
 
   // Return all booked intervals for a court on the selected date, sorted by start
   function allIntervals(courtId) {
     const bks     = getBookings(selectedDate)[courtId] || [];
     const userBks = getUserBookings(selectedDate).filter(b => b.courtId === courtId);
-    return [...bks, ...userBks].slice().sort((a, b) => a.start - b.start);
+    const lockBks = getActiveLocks(dateKey(selectedDate), courtId, activeLockId);
+    return [...bks, ...userBks, ...lockBks].slice().sort((a, b) => a.start - b.start);
+  }
+
+  // ─── Slot lock store ───────────────────────────────────────────────────────
+  // locks[dateKey][courtId] = [ { id, start, end, expiresAt } ]
+  const LOCK_DURATION_MS = 10 * 60 * 1000; // 10 minutes
+  const locks = {};
+  let activeLockId = null;   // the lock ID owned by this session
+  let countdownInterval = null;
+
+  function getActiveLocks(dk, courtId, excludeId = null) {
+    const now = Date.now();
+    const bucket = (locks[dk]?.[courtId] || []).filter(l => l.expiresAt > now && l.id !== excludeId);
+    return bucket;
+  }
+
+  function claimLock(dk, courtId, start, end) {
+    if (!locks[dk]) locks[dk] = {};
+    if (!locks[dk][courtId]) locks[dk][courtId] = [];
+    // Purge expired
+    locks[dk][courtId] = locks[dk][courtId].filter(l => l.expiresAt > Date.now());
+    const id = `lock_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    locks[dk][courtId].push({ id, start, end, expiresAt: Date.now() + LOCK_DURATION_MS });
+    activeLockId = id;
+    return id;
+  }
+
+  function releaseLock() {
+    if (!activeLockId || !pendingBooking) return;
+    const dk = dateKey(selectedDate);
+    const cid = pendingBooking.courtId;
+    if (locks[dk]?.[cid]) {
+      locks[dk][cid] = locks[dk][cid].filter(l => l.id !== activeLockId);
+    }
+    activeLockId = null;
+    stopCountdown();
+    renderAllBlocks();
+  }
+
+  function getLock() {
+    if (!activeLockId || !pendingBooking) return null;
+    const dk  = dateKey(selectedDate);
+    const cid = pendingBooking.courtId;
+    return (locks[dk]?.[cid] || []).find(l => l.id === activeLockId) || null;
   }
 
   // Check whether placing [lo, hi) would leave a 30-min (1-slot) orphan gap
@@ -1798,14 +1949,25 @@
     const body  = document.getElementById('calendarBody');
     const slotH = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--slot-h'));
     const labelW = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--label-w'));
+    const dk    = dateKey(selectedDate);
 
     COURTS.forEach((court, ci) => {
       const seeded = getBookings(selectedDate)[court.id] || [];
       const mine   = getUserBookings(selectedDate)
         .filter(b => b.courtId === court.id)
-        .map(b => ({ start: b.start, end: b.end, type: 'mine', label: 'My Booking', players: b.players || [], cost: b.cost }));
+        .map(b => ({ start: b.start, end: b.end, type: 'mine', label: window.i18n?.t('bk.myBooking') || 'My Booking', players: b.players || [], cost: b.cost }));
 
-      [...seeded, ...mine].forEach(bk => {
+      // Active locks by others (not our own lock)
+      const otherLocks = getActiveLocks(dk, court.id, activeLockId)
+        .map(l => ({ start: l.start, end: l.end, type: 'locked', label: window.i18n?.t('lock.legend') || 'Being booked' }));
+
+      // Our own lock shown as "held" on our slot
+      const ourLock = (activeLockId && pendingBooking?.courtId === court.id)
+        ? [{ start: pendingBooking.start, end: pendingBooking.end, type: 'held',
+             label: window.i18n?.t('lock.held') || 'Held for you' }]
+        : [];
+
+      [...seeded, ...mine, ...otherLocks, ...ourLock].forEach(bk => {
         const block = document.createElement('div');
         block.className = `booking-block ${bk.type}`;
 
@@ -1958,6 +2120,9 @@
         breakdownEl.innerHTML = '';
       }
       resetPlayerUI();
+      // Claim the lock for this slot
+      claimLock(dateKey(selectedDate), drag.courtId, lo, hi);
+      renderAllBlocks(); // show the "held" block immediately
       goToStep(1);
       document.getElementById('modalBackdrop').classList.add('open');
       requestAnimationFrame(() => document.getElementById('playerInput').focus());
@@ -2069,11 +2234,10 @@
   let currentStep = 1;
 
   function goToStep(n) {
-    // Hide all steps
     document.querySelectorAll('.modal-step').forEach(s => s.classList.add('hidden'));
     document.getElementById(`step${n}`).classList.remove('hidden');
+    document.getElementById('stepIndicator').style.display = '';
 
-    // Update step indicator
     document.querySelectorAll('.step-item').forEach(item => {
       const s = Number(item.dataset.step);
       item.classList.toggle('active', s === n);
@@ -2085,13 +2249,13 @@
 
     currentStep = n;
 
-    // Step-specific setup
     if (n === 2) setupPaymentStep();
     if (n === 3) setupSuccessStep();
   }
 
   // ── Step 1 wiring ──
   document.getElementById('step1Cancel').addEventListener('click', () => {
+    releaseLock();
     document.getElementById('modalBackdrop').classList.remove('open');
     pendingBooking = null;
     resetPlayerUI();
@@ -2107,17 +2271,63 @@
     const court     = COURTS.find(c => c.id === pendingBooking.courtId);
     const dateStr   = selectedDate.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
 
-    document.getElementById('pillLabel').textContent  = `${court.icon} ${court.name} · ${dateStr}`;
-    document.getElementById('pillTotal').textContent  = formatEur(total);
+    document.getElementById('pillLabel').textContent      = `${court.icon} ${court.name} · ${dateStr}`;
+    document.getElementById('pillTotal').textContent      = formatEur(total);
     document.getElementById('step2PayAmount').textContent = formatEur(total);
 
     // Show/hide new card form
     document.querySelectorAll('input[name="payMethod"]').forEach(r => {
       r.addEventListener('change', () => {
-        const form = document.getElementById('newCardForm');
-        form.classList.toggle('hidden', r.value !== 'new');
+        document.getElementById('newCardForm').classList.toggle('hidden', r.value !== 'new');
       });
     });
+
+    // Start countdown
+    startCountdown();
+  }
+
+  function startCountdown() {
+    stopCountdown();
+    const el = document.getElementById('lockCountdown');
+    if (!el) return;
+
+    function tick() {
+      const lock = getLock();
+      if (!lock) return;
+      const remaining = Math.max(0, lock.expiresAt - Date.now());
+      const mins = Math.floor(remaining / 60000);
+      const secs = Math.floor((remaining % 60000) / 1000);
+      el.textContent = `${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
+
+      // Colour shifts as time runs low
+      el.closest('.lock-bar').classList.toggle('lock-bar-warn',  remaining < 120000);
+      el.closest('.lock-bar').classList.toggle('lock-bar-urgent', remaining < 60000);
+
+      if (remaining === 0) {
+        stopCountdown();
+        handleLockExpiry();
+      }
+    }
+
+    tick();
+    countdownInterval = setInterval(tick, 1000);
+  }
+
+  function stopCountdown() {
+    if (countdownInterval) { clearInterval(countdownInterval); countdownInterval = null; }
+  }
+
+  function handleLockExpiry() {
+    // Release the now-expired lock
+    activeLockId = null;
+    renderAllBlocks();
+
+    // Show expiry screen inside the modal
+    document.querySelectorAll('.modal-step').forEach(s => s.classList.add('hidden'));
+    document.getElementById('stepExpired').classList.remove('hidden');
+
+    // Hide the step indicator
+    document.getElementById('stepIndicator').style.display = 'none';
   }
 
   // Card number formatting helper
@@ -2223,7 +2433,17 @@
     goToStep(3);
   }
 
+  document.getElementById('expiredClose').addEventListener('click', () => {
+    document.getElementById('stepIndicator').style.display = '';
+    document.getElementById('modalBackdrop').classList.remove('open');
+    pendingBooking = null;
+    activeLockId   = null;
+    resetPlayerUI();
+  });
+
   document.getElementById('step3Done').addEventListener('click', () => {
+    stopCountdown();
+    activeLockId = null; // lock consumed by confirmed booking, don't release
     document.getElementById('modalBackdrop').classList.remove('open');
     pendingBooking = null;
     resetPlayerUI();
