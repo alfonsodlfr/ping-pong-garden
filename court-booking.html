@@ -2420,6 +2420,10 @@
   }
 
   function confirmAndAdvance() {
+    // Remove the lock record so the slot no longer shows as "held"
+    releaseLock();
+    activeLockId = null; // already cleared by releaseLock, but be explicit
+
     // Commit the booking to state
     getUserBookings(selectedDate).push({
       ...pendingBooking,
@@ -2443,7 +2447,6 @@
 
   document.getElementById('step3Done').addEventListener('click', () => {
     stopCountdown();
-    activeLockId = null; // lock consumed by confirmed booking, don't release
     document.getElementById('modalBackdrop').classList.remove('open');
     pendingBooking = null;
     resetPlayerUI();
